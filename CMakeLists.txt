@@ -1,5 +1,5 @@
 # CMakeLists.txt
-cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.0.2 FATAL_ERROR)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -51,29 +51,84 @@ elseif (UNIX)
 endif()
 
 # external libraries
+
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build as DLL" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-set(LIBTYPE "STATIC" CACHE BOOL "" FORCE) # OpenAL
-add_subdirectory(external/ogg EXCLUDE_FROM_ALL)
-add_subdirectory(external/vorbis EXCLUDE_FROM_ALL)
-add_subdirectory(external/SDL EXCLUDE_FROM_ALL)
-add_subdirectory(external/SDL_ttf EXCLUDE_FROM_ALL)
-add_subdirectory(external/openal EXCLUDE_FROM_ALL)
-add_subdirectory(external/miniaudio EXCLUDE_FROM_ALL)
-add_subdirectory(external/zlib EXCLUDE_FROM_ALL)
-add_subdirectory(external/misc EXCLUDE_FROM_ALL)
-add_subdirectory(external/discordrpc EXCLUDE_FROM_ALL)
+set(MINIAUDIO_NO_LIBVORBIS ON CACHE BOOL "Disable miniaudio_libvorbis" FORCE) 
+set(MINIAUDIO_NO_LIBOPUS ON CACHE BOOL "Disable miniaudio_libopus" FORCE) 
+# OpenAL
+set(LIBTYPE "STATIC" CACHE BOOL "" FORCE) 
 
-# what the hell am i doing with my life
+add_subdirectory(external/misc EXCLUDE_FROM_ALL)
+
+#curl stuff
+
 set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
-# i am asking the same thing buddy.
 set(CURL_ZLIB OFF CACHE BOOL "Disable curl's use of system zlib" FORCE)
 set(HTTP_ONLY ON CACHE BOOL "" FORCE)
 set(CURL_USE_LIBPSL OFF CACHE BOOL "Use libpsl" FORCE)
 set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
 set(CURL_USE_MBEDTLS OFF CACHE BOOL "" FORCE)
-add_subdirectory(external/curl EXCLUDE_FROM_ALL)
+
+
+include(FetchContent)
+
+FetchContent_Declare(
+    SDL3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL
+    GIT_TAG main
+)
+
+FetchContent_Declare(
+    SDL3_TTF
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf
+    GIT_TAG main
+)
+
+FetchContent_Declare(
+    OpenAL
+    GIT_REPOSITORY https://github.com/teampopwork/openal-soft
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    miniaudio
+    GIT_REPOSITORY https://github.com/mackron/miniaudio
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    ogg
+    GIT_REPOSITORY https://github.com/teampopwork/ogg
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    vorbis
+    GIT_REPOSITORY https://github.com/teampopwork/vorbis
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    curl
+    GIT_REPOSITORY https://github.com/curl/curl
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY https://github.com/madler/zlib
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    discordrpc
+    GIT_REPOSITORY https://github.com/EclipseMenu/discord-presence
+    GIT_TAG main
+)
+
+FetchContent_MakeAvailable(SDL3 SDL3_TTF OpenAL miniaudio ogg vorbis curl zlib discordrpc)
 
 add_subdirectory(PopLib)
 
@@ -93,10 +148,4 @@ if(BUILD_EXAMPLES OR BUILD_TOOLS)
     endif()
 
     add_custom_target(alldemos ALL DEPENDS ${demo_deps})
-endif()
-
-if(NOT (DEFINED ENV{GITHUB_ACTIONS} AND "$ENV{GITHUB_ACTIONS}" STREQUAL "true"))
-    add_custom_command(TARGET alldemos POST_BUILD
-        COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR} --config $<CONFIG>
-    )
 endif()
