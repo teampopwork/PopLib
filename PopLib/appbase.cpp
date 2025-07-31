@@ -201,6 +201,7 @@ AppBase::AppBase()
 	mDebugKeysEnabled = false;
 	mNoSoundNeeded = false;
 
+	mRendererAPI = RENDERER_OPENGL;
 	mSyncRefreshRate = 100;
 	mVSyncUpdates = false;
 	mVSyncBroken = false;
@@ -2216,8 +2217,20 @@ void AppBase::MakeWindow()
 
 	if (!mRenderer)
 	{
-		mRenderer = new GLRenderer(this);
-		mRendererAPI = RENDERER_OPENGL;
+		switch (mRendererAPI)
+		{
+			case RENDERER_SDL:
+			{
+				mRenderer = new SDLRenderer(this);
+				break;
+			}
+			case RENDERER_OPENGL:
+			{
+				mRenderer = new GLRenderer(this);
+				break;
+			}
+		}
+		
 
 		// Enable 3d setting
 		bool is3D = false;
@@ -3088,7 +3101,7 @@ void AppBase::SetDouble(const std::string &theId, double theValue)
 
 void AppBase::DoParseCmdLine()
 {
-	/*
+#ifdef _WIN32
 	char *aCmdLine = GetCommandLineA();
 	char *aCmdLinePtr = aCmdLine;
 	if (aCmdLinePtr[0] == '"')
@@ -3104,7 +3117,7 @@ void AppBase::DoParseCmdLine()
 		if (aCmdLinePtr != nullptr)
 			ParseCmdLine(aCmdLinePtr + 1);
 	}
-	*/
+#endif	
 
 	mCmdLineParsed = true;
 }
@@ -3205,6 +3218,14 @@ void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::str
 	else if (theParamName == "-changedir")
 	{
 		mChangeDirTo = theParamValue;
+	}
+	else if (theParamName == "-sdlrenderer")
+	{
+		mRendererAPI = RENDERER_SDL;
+	}
+	else if (theParamName == "-opengl")
+	{
+		mRendererAPI = RENDERER_OPENGL;
 	}
 	else
 	{

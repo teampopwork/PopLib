@@ -115,8 +115,6 @@ class SDLRenderer : public Renderer
 	virtual bool CreateImageTexture(GPUImage *theImage);
 	virtual bool RecoverBits(GPUImage *theImage);
 
-	virtual BlendMode ChooseBlendMode(int theBlendMode);
-
 	// Draw Funcs
 	virtual void Blt(Image *theImage, int theX, int theY, const Rect &theSrcRect, const Color &theColor,
 					 int theDrawMode, bool linearFilter = false);

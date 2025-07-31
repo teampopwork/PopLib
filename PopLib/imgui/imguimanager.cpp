@@ -1,7 +1,8 @@
 #include "imguimanager.hpp"
 #include "appbase.hpp"
 
-// interfaces
+// renderers
+#include "graphics/renderer/glrenderer.hpp"
 #include "graphics/renderer/sdlrenderer.hpp"
 
 using namespace PopLib;
@@ -42,11 +43,19 @@ ImGuiManager::ImGuiManager(Renderer *theInterface)
 
 	switch (gAppBase->mRendererAPI)
 	{
-		default:
+		case RENDERER_SDL:
 		{
 			SDLRenderer *aInterface = (SDLRenderer*)mRenderer;
 			ImGui_ImplSDL3_InitForSDLRenderer(gAppBase->mWindow, aInterface->mRenderer);
 			ImGui_ImplSDLRenderer3_Init(aInterface->mRenderer);
+			break;
+		}
+		case RENDERER_OPENGL:
+		{
+			GLRenderer *aInterface = (GLRenderer*)mRenderer;
+			ImGui_ImplSDL3_InitForOpenGL(gAppBase->mWindow, aInterface->mContext);
+			ImGui_ImplOpenGL3_Init();
+			break;
 		}
 	}
 }
@@ -65,10 +74,17 @@ void ImGuiManager::Frame(void)
 {
 	switch (gAppBase->mRendererAPI)
 	{
-		default:
+		case RENDERER_SDL:
 		{
 			ImGui_ImplSDLRenderer3_NewFrame();
 			ImGui_ImplSDL3_NewFrame();
+			break;
+		}
+		case RENDERER_OPENGL:
+		{
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplSDL3_NewFrame();
+			break;
 		}
 	}
 	ImGui::NewFrame();
@@ -85,10 +101,17 @@ ImGuiManager::~ImGuiManager()
 {
 	switch (gAppBase->mRendererAPI)
 	{
-		default:
+		case RENDERER_SDL:
 		{
 			ImGui_ImplSDLRenderer3_Shutdown();
 			ImGui_ImplSDL3_Shutdown();
+			break;
+		}
+		case RENDERER_OPENGL:
+		{
+			ImGui_ImplOpenGL3_Shutdown();
+			ImGui_ImplSDL3_Shutdown();
+			break;
 		}
 	}
 
