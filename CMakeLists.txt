@@ -8,7 +8,7 @@ project(PopLib LANGUAGES C CXX ASM)
 
 set(POPLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-set(BUILD_SHARED_LIBS OFF)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/CopyDLLPost.cmake)
 
 # temp workaround for me
 set(_Python3_EXECUTABLE_DEBUG "" CACHE FILEPATH "Python debug executable")
