@@ -24,7 +24,6 @@ class TriVertex;
 
 typedef std::set<SDLImage *> SDLImageSet;
 typedef std::set<SDLImage *> ImageSet;
-typedef std::list<Matrix3> TransformStack;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,7 +73,6 @@ class SDLRenderer : public Renderer
   public:
 	ImageSet mImageSet;
 	GPUImageSet mSDLImageSet;
-	TransformStack mTransformStack;
 
   public:
 	SDL_Renderer *mRenderer;
@@ -94,7 +92,7 @@ class SDLRenderer : public Renderer
 	{
 		return new SDLImage();
 	}
-	virtual GPUImage *GetScreenImage();
+
 	virtual void UpdateViewport();
 	virtual int Init();
 
@@ -108,13 +106,9 @@ class SDLRenderer : public Renderer
 	virtual bool Redraw(Rect *theClipRect);
 	virtual void SetVideoOnlyDraw(bool videoOnly);
 
-	virtual bool UpdateWindowIcon(Image *theImage);
-
 	virtual void DrawText(int theY, int theX, const PopString &theText, const Color &theColor, TTF_Font *theFont);
 
   public:
-	virtual void PushTransform(const Matrix3 &theTransform, bool concatenate = true);
-	virtual void PopTransform();
 
 	virtual bool PreDraw();
 

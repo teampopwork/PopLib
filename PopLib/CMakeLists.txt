@@ -85,7 +85,7 @@ add_library(${PROJECT_NAME} STATIC ${ALL_GROUPED_FILES})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
     -DPOPLIB_VERSION_MAJOR=2
-    -DPOPLIB_VERSION_MINOR=0
+    -DPOPLIB_VERSION_MINOR=1
     -DPOPLIB_VERSION_PATCH=0
     -DPOPLIB_VERSION_STAGE=alpha
 )
@@ -94,7 +94,6 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${POPLIB_ROOT_DIR}/external/misc
         ${POPLIB_ROOT_DIR}/external/bass
         ${POPLIB_ROOT_DIR}/external/stb_image
 )
@@ -122,6 +121,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Vorbis::vorbis
     CURL::libcurl
     zlibstatic
+    glm
     misc
     ${BASS_LIB_PATH}
 )

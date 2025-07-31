@@ -128,7 +128,13 @@ FetchContent_Declare(
     GIT_TAG main
 )
 
-FetchContent_MakeAvailable(SDL3 SDL3_TTF OpenAL miniaudio ogg vorbis curl zlib discordrpc)
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm
+    GIT_TAG master
+)
+
+FetchContent_MakeAvailable(SDL3 SDL3_TTF OpenAL miniaudio ogg vorbis curl zlib discordrpc glm)
 
 add_subdirectory(PopLib)
 

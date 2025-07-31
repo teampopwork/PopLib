@@ -182,11 +182,11 @@ void Board::Draw(Graphics* g)
 	if (!mLostFocus)
 	{
 		GraphicsAutoState auto_state(g);
-		g->DrawImage(IMAGE_HUNGARR_LOGO, 10, 100);
+		//g->DrawImage(IMAGE_HUNGARR_LOGO, 10, 100);
 		g->SetDrawMode(Graphics::DRAWMODE_ADDITIVE);
 		g->SetColorizeImages(true);
 		g->SetColor(Color(mUpdateCnt % 128, mUpdateCnt % 255, mUpdateCnt % 64));
-		g->DrawImage(IMAGE_HUNGARR_LOGO, 10, 100);
+
 	}
 
 	if (mCurtainMode != CURTAIN_INACTIVE)
@@ -199,6 +199,10 @@ void Board::Draw(Graphics* g)
 	if (mLostFocus)
 		DeferOverlay(mDeferPriority);
 
+	Transform t;
+	//t.Scale(-1.0f, 1.0f);
+	t.RotateDeg((float)(mUpdateCnt % 360));
+	g->DrawImageTransform(IMAGE_HUNGARR_LOGO, t, 200, 200);
 }
 
 void Board::DrawOverlay(Graphics* g)

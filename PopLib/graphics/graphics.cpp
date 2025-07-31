@@ -870,9 +870,9 @@ void Graphics::DrawImageTransformHelper(Image *theImage, const Transform &theTra
 		y = y + theTransform.mTransY2 - ry + 0.5f;
 
 		if (useFloat)
-			DrawImageRotatedF(theImage, x, y, theTransform.mRot, rx, ry, &theSrcRect);
+			DrawImageRotatedF(theImage, x, y, theTransform.mRot * (180.0f / 3.14159265358979323846f), rx, ry, &theSrcRect);
 		else
-			DrawImageRotated(theImage, x, y, theTransform.mRot, rx, ry, &theSrcRect);
+			DrawImageRotated(theImage, x, y, theTransform.mRot * (180.0f / 3.14159265358979323846f), rx, ry, &theSrcRect);
 	}
 	else if (theTransform.mHaveScale)
 	{

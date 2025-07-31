@@ -42,6 +42,7 @@
 
 // renderer apis
 #include "graphics/renderer/sdlrenderer.hpp"
+#include "graphics/renderer/glrenderer.hpp"
 
 #include "graphics/renderer/apitester.hpp"
 
@@ -710,7 +711,7 @@ void AppBase::DumpProgramInfo()
 		int aMemorySize = 0;
 		if (aGPUImage->mBits != nullptr)
 			aBitsMemory = aNumPixels * 4;
-		if ((aGPUImage != nullptr) && (aGPUImage->mD3DData != nullptr))
+		if ((aGPUImage != nullptr) && (aGPUImage->mGPUData != nullptr))
 			aSurfaceMemory = aNumPixels * 4; // Assume 32bit screen...
 		if (aGPUImage->mColorTable != nullptr)
 			aPalletizedMemory = aNumPixels + 256 * 4;
@@ -725,8 +726,8 @@ void AppBase::DumpProgramInfo()
 			aRLAlphaMemory = aNumPixels;
 		if (aGPUImage->mRLAdditiveData != nullptr)
 			aRLAdditiveMemory = aNumPixels;
-		//if (aGPUImage->mD3DData != nullptr)
-		//	aTextureMemory += ((SDLTextureData *)aGPUImage->mD3DData)->GetMemSize();
+		//if (aGPUImage->mGPUData != nullptr)
+		//	aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
 
 		aMemorySize = aBitsMemory + aSurfaceMemory + aPalletizedMemory + aNativeAlphaMemory + aRLAlphaMemory +
 					  aRLAdditiveMemory + aTextureMemory;
@@ -781,7 +782,7 @@ void AppBase::DumpProgramInfo()
 
 		if (aGPUImage->mBits != nullptr)
 			aBitsMemory = aNumPixels * 4;
-		if ((aGPUImage != nullptr) && (aGPUImage->mD3DData != nullptr))
+		if ((aGPUImage != nullptr) && (aGPUImage->mGPUData != nullptr))
 			aSurfaceMemory = aNumPixels * 4; // Assume 32bit screen...
 		if (aGPUImage->mColorTable != nullptr)
 			aPalletizedMemory = aNumPixels + 256 * 4;
@@ -796,9 +797,9 @@ void AppBase::DumpProgramInfo()
 			aRLAlphaMemory = aNumPixels;
 		if (aGPUImage->mRLAdditiveData != nullptr)
 			aRLAdditiveMemory = aNumPixels;
-		if (aGPUImage->mD3DData != nullptr)
+		if (aGPUImage->mGPUData != nullptr)
 		{
-			//aTextureMemory += ((SDLTextureData *)aGPUImage->mD3DData)->GetMemSize();
+			//aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
 
 			aTextureFormatName = "ARGB8888"; // They are always like this
 		}
@@ -832,7 +833,7 @@ void AppBase::DumpProgramInfo()
 					<< "</TD>" << std::endl;
 
 		aDumpStream << "<TD>"
-					<< ((aGPUImage->mD3DData != nullptr)
+					<< ((aGPUImage->mGPUData != nullptr)
 							? "Texture<BR>" + aTextureFormatName + "<BR>" + CommaSeperate(aTextureMemory)
 							: "&nbsp;")
 					<< "</TD>" << std::endl;
@@ -1876,9 +1877,9 @@ void AppBase::ShowMemoryUsage()
 	while (anItr != mGPUImageSet.end())
 	{
 		GPUImage* aGPUImage = *anItr;
-		if (aGPUImage->mD3DData != nullptr)
+		if (aGPUImage->mGPUData != nullptr)
 		{
-			TextureData *aData = (TextureData*)aGPUImage->mD3DData;
+			TextureData *aData = (TextureData*)aGPUImage->mGPUData;
 			aTextureMemory += aData->mTexMemSize;
 
 			FormatUsage &aUsage = aFormatMap[aData->mPixelFormat];
@@ -2200,7 +2201,7 @@ void AppBase::MakeWindow()
 {
 	int aWindowFlags = mIsWindowed ? 0 : SDL_WINDOW_FULLSCREEN;
 
-	mWindow = SDL_CreateWindow(mTitle.c_str(), mWidth, mHeight, aWindowFlags);
+	mWindow = SDL_CreateWindow(mTitle.c_str(), mWidth, mHeight, aWindowFlags | SDL_WINDOW_OPENGL);
 	if (mWindow == nullptr)
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Window Creation Failed", SDL_GetError(), nullptr);
@@ -2215,8 +2216,8 @@ void AppBase::MakeWindow()
 
 	if (!mRenderer)
 	{
-		mRenderer = new SDLRenderer(this);
-		mRendererAPI = RENDERER_SDL;
+		mRenderer = new GLRenderer(this);
+		mRendererAPI = RENDERER_OPENGL;
 
 		// Enable 3d setting
 		bool is3D = false;
@@ -2262,6 +2263,24 @@ void AppBase::MakeWindow()
 
 	//	SetTimer(mHWnd, 100, mFrameTime, nullptr);
 }
+
+
+bool AppBase::UpdateWindowIcon(Image *theImage)
+{
+	if (theImage != nullptr)
+	{
+		SDL_Surface *aSurface =
+			SDL_CreateSurfaceFrom(theImage->mWidth, theImage->mHeight, SDL_PIXELFORMAT_ARGB8888,
+								  ((MemoryImage *)theImage)->GetBits(), theImage->mWidth * sizeof(ulong));
+
+		SDL_SetWindowIcon(mWindow, aSurface);
+
+		SDL_DestroySurface(aSurface);
+		return true;
+	}
+	return false;
+}
+
 
 void AppBase::DeleteNativeImageData()
 {

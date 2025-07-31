@@ -40,8 +40,9 @@ enum RendererAPI
 {
 	RENDERER_NONE = 0,
 	RENDERER_SDL,	//SDL Renderer
+	RENDERER_OPENGL,	//GLRenderer
 	RENDERER_NUM,	//number of renderer APIs
-	RENDERER_3D_ACCEL = RENDERER_SDL, //3D Accelerated APIs
+	RENDERER_3D_ACCEL = RENDERER_OPENGL, //3D Accelerated APIs
 };
 
 namespace ImageLib
@@ -749,6 +750,10 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief sets taskbar icon
 	/// @param theFileName 
 	void SetTaskBarIcon(const std::string &theFileName);
+	/// @brief Update the titlebar icon
+	/// @param theImage 
+	/// @return 
+	bool UpdateWindowIcon(Image *theImage);
 
 	/// @brief cleans shared images
 	void CleanSharedImages();

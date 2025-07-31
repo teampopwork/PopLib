@@ -124,7 +124,10 @@ class Renderer
 
 	virtual GPUImage *NewGPUImage() = 0;
 
-	virtual GPUImage *GetScreenImage() = 0;
+	virtual GPUImage *GetScreenImage()
+	{
+		return mScreenImage;
+	}
 	virtual void UpdateViewport() = 0;
 	virtual int Init() = 0;
 
@@ -133,17 +136,12 @@ class Renderer
 
 	virtual std::unique_ptr<ImageData> CaptureFrameBuffer() = 0;
 
-	virtual bool UpdateWindowIcon(Image *theImage) = 0;
-
-	virtual void PushTransform(const Matrix3 &theTransform, bool concatenate = true) = 0;
-	virtual void PopTransform() = 0;
-
 	virtual bool PreDraw() = 0;
 
 	virtual bool CreateImageTexture(GPUImage *theImage) = 0;
 	virtual bool RecoverBits(GPUImage *theImage) = 0;
 
-	virtual BlendMode ChooseBlendMode(int theBlendMode) = 0;
+	virtual BlendMode ChooseBlendMode(int theBlendMode);
 	virtual void DrawText(int theY, int theX, const PopString &theText, const Color &theColor, TTF_Font *theFont) = 0;
 
 	// Draw Funcs
@@ -180,6 +178,7 @@ class Renderer
 	virtual void BltTexture(Texture *theTexture, const Rect &theSrcRect, const Rect &theDestRect, const Color &theColor,
 							int theDrawMode) = 0;
 };
+extern bool gRendererPreDrawError;
 
 }; // namespace PopLib
 

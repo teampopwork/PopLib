@@ -1,6 +1,9 @@
 #include "renderer.hpp"
+#include "graphics.hpp"
 
 using namespace PopLib;
+
+bool PopLib::gRendererPreDrawError = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,4 +28,21 @@ Renderer::Renderer()
 ///////////////////////////////////////////////////////////////////////////////
 Renderer::~Renderer()
 {
+}
+
+
+BlendMode Renderer::ChooseBlendMode(int theBlendMode)
+{
+	BlendMode theBBlendMode;
+	switch (theBlendMode)
+	{
+	case Graphics::DRAWMODE_ADDITIVE:
+		theBBlendMode = BLENDMODE_ADD;
+		break;
+	default:
+	case Graphics::DRAWMODE_NORMAL:
+		theBBlendMode = BLENDMODE_BLEND;
+		break;
+	}
+	return theBBlendMode;
 }
