@@ -1,8 +1,7 @@
 #ifndef __GAMEAPP_H__
 #define __GAMEAPP_H__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 //							GameApp.h

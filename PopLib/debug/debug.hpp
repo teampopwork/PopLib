@@ -1,8 +1,7 @@
 #ifndef __DEBUG_HPP__
 #define __DEBUG_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include <cassert>

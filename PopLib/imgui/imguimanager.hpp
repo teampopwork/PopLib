@@ -1,8 +1,7 @@
 #ifndef __IMGUIMANAGER_HPP__
 #define __IMGUIMANAGER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "core/imgui.h"

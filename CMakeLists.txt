@@ -9,6 +9,7 @@ project(PopLib LANGUAGES C CXX ASM)
 set(POPLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/CopyDLLPost.cmake)
+include(FetchContent)
 
 # temp workaround for me
 set(_Python3_EXECUTABLE_DEBUG "" CACHE FILEPATH "Python debug executable")
@@ -45,34 +46,31 @@ else ()
 endif()
 
 if (WIN32)
-    set(BASS_PATH "${BASS_LIB_PATH}/bass.dll" CACHE FILEPATH "Path to BASS DLL" FORCE)
+    set(BASS_PATH "${BASS_LIB_PATH}/bass.dll" CACHE FILEPATH "Path to BASS .dll" FORCE)
+elseif (APPLE)
+    set(BASS_PATH "${BASS_LIB_PATH}/libbass.dylib" CACHE FILEPATH "Path to BASS .dylib" FORCE)
 elseif (UNIX)
-    set(BASS_PATH "${BASS_LIB_PATH}/libbass.so" CACHE FILEPATH "Path to BASS SO" FORCE)
+    set(BASS_PATH "${BASS_LIB_PATH}/libbass.so" CACHE FILEPATH "Path to BASS .so" FORCE)
 endif()
 
 # external libraries
-
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build as DLL" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(MINIAUDIO_NO_LIBVORBIS ON CACHE BOOL "Disable miniaudio_libvorbis" FORCE) 
 set(MINIAUDIO_NO_LIBOPUS ON CACHE BOOL "Disable miniaudio_libopus" FORCE) 
+
 # OpenAL
-set(LIBTYPE "STATIC" CACHE BOOL "" FORCE) 
+set(LIBTYPE "STATIC" CACHE BOOL "" FORCE)
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(external/misc EXCLUDE_FROM_ALL)
-
-#curl stuff
-
+# curl
 set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
 set(CURL_ZLIB OFF CACHE BOOL "Disable curl's use of system zlib" FORCE)
 set(HTTP_ONLY ON CACHE BOOL "" FORCE)
 set(CURL_USE_LIBPSL OFF CACHE BOOL "Use libpsl" FORCE)
 set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
 set(CURL_USE_MBEDTLS OFF CACHE BOOL "" FORCE)
-
-
-include(FetchContent)
 
 FetchContent_Declare(
     SDL3
@@ -136,6 +134,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SDL3 SDL3_TTF OpenAL miniaudio ogg vorbis curl zlib discordrpc glm)
 
+add_subdirectory(external/misc EXCLUDE_FROM_ALL)
 add_subdirectory(PopLib)
 
 if(BUILD_EXAMPLES)

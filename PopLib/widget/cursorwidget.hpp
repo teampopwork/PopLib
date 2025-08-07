@@ -1,8 +1,7 @@
 #ifndef __CURSORWIDGET_HPP__
 #define __CURSORWIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "widget.hpp"
 #include "math/point.hpp"

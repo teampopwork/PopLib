@@ -1,8 +1,7 @@
 #ifndef __RESOURCEMANAGER_HPP__
 #define __RESOURCEMANAGER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "graphics/image.hpp"

@@ -1,8 +1,7 @@
 #ifndef __V14DEMOAPP_HPP__
 #define __V14DEMOAPP_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "PopLib/popapp.hpp"
 

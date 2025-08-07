@@ -1,8 +1,7 @@
 #ifndef __POPAPP_HPP__
 #define __POPAPP_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "appbase.hpp"
 

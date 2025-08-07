@@ -26,9 +26,8 @@
 
 #ifndef __BOARD_H__
 #define __BOARD_H__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 // This file must be included so that we can derive our Board class from it
 #include "PopLib/widget/widget.hpp"

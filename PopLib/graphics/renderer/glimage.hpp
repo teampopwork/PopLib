@@ -1,8 +1,7 @@
 #ifndef __GLIMAGE_HPP__
 #define __GLIMAGE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "../gpuimage.hpp"
 

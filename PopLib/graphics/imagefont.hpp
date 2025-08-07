@@ -1,8 +1,7 @@
 #ifndef __IMAGEFONT_HPP__
 #define __IMAGEFONT_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "font.hpp"
 #include "readwrite/descparser.hpp"

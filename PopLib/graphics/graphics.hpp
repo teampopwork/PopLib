@@ -1,8 +1,7 @@
 #ifndef __GRAPHICS_HPP__
 #define __GRAPHICS_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "math/rect.hpp"

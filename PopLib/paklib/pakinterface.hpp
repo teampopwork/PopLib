@@ -1,8 +1,7 @@
 ﻿#ifndef __PAKINTERFACE_HPP__
 #define __PAKINTERFACE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <map>
 #include <list>
@@ -32,33 +31,34 @@ typedef std::map<std::string, PakRecord> PakRecordMap;
 class PakCollection
 {
   public:
-	explicit PakCollection(std::size_t size)
-        : mData(size) {}
+	explicit PakCollection(std::size_t size) : mData(size)
+	{
+	}
 
-    uint8_t* data()
-    {
-        return mData.data();
-    }
+	uint8_t *data()
+	{
+		return mData.data();
+	}
 
-    const uint8_t* data() const
-    {
-        return mData.data();
-    }
+	const uint8_t *data() const
+	{
+		return mData.data();
+	}
 
-    std::size_t size() const
-    {
-        return mData.size();
-    }
+	std::size_t size() const
+	{
+		return mData.size();
+	}
 
-    std::vector<uint8_t>& vector()
-    {
-        return mData;
-    }
+	std::vector<uint8_t> &vector()
+	{
+		return mData;
+	}
 
-    const std::vector<uint8_t>& vector() const
-    {
-        return mData;
-    }
+	const std::vector<uint8_t> &vector() const
+	{
+		return mData;
+	}
 
   private:
 	std::vector<uint8_t> mData;
@@ -163,7 +163,7 @@ class PakInterface : public PakInterfaceBase
 	PakInterface();
 	~PakInterface();
 
-	virtual bool AddPakFile(const std::string &fileName);
+	virtual bool AddPakFile(const std::string &fileName) override;
 
 	PFILE *FOpen(const char *fn, const char *mode) override;
 	int FClose(PFILE *pf) override;

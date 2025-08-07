@@ -23,9 +23,8 @@
 
 #ifndef __PHYSICS_HPP__
 #define __PHYSICS_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <stdlib.h>
 #include <assert.h>

@@ -1,8 +1,7 @@
 #ifndef __MATH_HPP__
 #define __MATH_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include <cmath>

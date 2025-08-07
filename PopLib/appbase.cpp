@@ -48,13 +48,11 @@
 
 #include "debug/memmgr.hpp"
 
-// H521
 #undef STB_IMAGE_IMPLEMENTATION
 #undef STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image.h>
 #include "stb_image_write.h"
 
-// H522
 #include <json.hpp>
 
 using namespace PopLib;
@@ -266,7 +264,7 @@ AppBase::AppBase()
 	// if(!stringsFile)
 	//{
 	//	MessageBox(nullptr, "file missing: 'install-folder\\properties\\fstrings' Please re-install", "FATAL ERROR",
-	//MB_OK); 	DoExit(1);
+	// MB_OK); 	DoExit(1);
 	// }
 	// std::getline(stringsFile, mString_HardwareAccelSwitchedOn);
 	// std::getline(stringsFile, mString_HardwareAccelConfirm);
@@ -286,8 +284,9 @@ AppBase::AppBase()
 	// stringsFile.close();
 }
 
-namespace PopLib {
-    extern bool gInterfacePreDrawError;
+namespace PopLib
+{
+extern bool gInterfacePreDrawError;
 }
 
 AppBase::~AppBase()
@@ -329,7 +328,6 @@ AppBase::~AppBase()
 
 	gAppBase = nullptr;
 
-
 #ifdef _WIN32
 	FreeLibrary(gVersionDLL);
 #endif
@@ -357,8 +355,8 @@ bool AppBase::AppCanRestore()
 Dialog *AppBase::NewDialog(int theDialogId, bool isModal, const PopString &theDialogHeader,
 						   const PopString &theDialogLines, const PopString &theDialogFooter, int theButtonMode)
 {
-	Dialog *aDialog =
-		new Dialog(nullptr, nullptr, theDialogId, isModal, theDialogHeader, theDialogLines, theDialogFooter, theButtonMode);
+	Dialog *aDialog = new Dialog(nullptr, nullptr, theDialogId, isModal, theDialogHeader, theDialogLines,
+								 theDialogFooter, theButtonMode);
 	return aDialog;
 }
 
@@ -538,48 +536,46 @@ std::string AppBase::GetProductVersion(const std::string &thePath)
 		gVersionDLL = LoadLibraryA("version.dll");
 
 	// Dynamically Load Version.dll
-	typedef uint32_t (APIENTRY *GetFileVersionInfoSizeFunc)(LPSTR lptstrFilename, LPDWORD lpdwHandle);
-	typedef BOOL (APIENTRY *GetFileVersionInfoFunc)(LPSTR lptstrFilename, uint32_t dwHandle, uint32_t dwLen, LPVOID lpData);
-	typedef BOOL (APIENTRY *VerQueryValueFunc)(const LPVOID pBlock, LPSTR lpSubBlock, LPVOID * lplpBuffer, PUINT puLen);
+	typedef uint32_t(APIENTRY * GetFileVersionInfoSizeFunc)(LPSTR lptstrFilename, LPDWORD lpdwHandle);
+	typedef BOOL(APIENTRY * GetFileVersionInfoFunc)(LPSTR lptstrFilename, uint32_t dwHandle, uint32_t dwLen,
+													LPVOID lpData);
+	typedef BOOL(APIENTRY * VerQueryValueFunc)(const LPVOID pBlock, LPSTR lpSubBlock, LPVOID *lplpBuffer, PUINT puLen);
 
 	static GetFileVersionInfoSizeFunc aGetFileVersionInfoSizeFunc = nullptr;
 	static GetFileVersionInfoFunc aGetFileVersionInfoFunc = nullptr;
 	static VerQueryValueFunc aVerQueryValueFunc = nullptr;
 
-	if (aGetFileVersionInfoSizeFunc==nullptr)
+	if (aGetFileVersionInfoSizeFunc == nullptr)
 	{
-		aGetFileVersionInfoSizeFunc = (GetFileVersionInfoSizeFunc)GetProcAddress(gVersionDLL,"GetFileVersionInfoSizeA");
-		aGetFileVersionInfoFunc = (GetFileVersionInfoFunc)GetProcAddress(gVersionDLL,"GetFileVersionInfoA");
-		aVerQueryValueFunc = (VerQueryValueFunc)GetProcAddress(gVersionDLL,"VerQueryValueA");
+		aGetFileVersionInfoSizeFunc =
+			(GetFileVersionInfoSizeFunc)GetProcAddress(gVersionDLL, "GetFileVersionInfoSizeA");
+		aGetFileVersionInfoFunc = (GetFileVersionInfoFunc)GetProcAddress(gVersionDLL, "GetFileVersionInfoA");
+		aVerQueryValueFunc = (VerQueryValueFunc)GetProcAddress(gVersionDLL, "VerQueryValueA");
 	}
 
 	// Get Product Version
 	std::string aProductVersion;
 
-	uint aSize = aGetFileVersionInfoSizeFunc((char*) thePath.c_str(), 0);
+	uint aSize = aGetFileVersionInfoSizeFunc((char *)thePath.c_str(), 0);
 	if (aSize > 0)
 	{
-		uchar* aVersionBuffer = new uchar[aSize];
-		aGetFileVersionInfoFunc((char*) thePath.c_str(), 0, aSize, aVersionBuffer);
-		char* aBuffer;
-		if (aVerQueryValueFunc(aVersionBuffer,
-				(char*)"\\StringFileInfo\\040904B0\\ProductVersion",
-				(void**) &aBuffer,
-				&aSize))
+		uchar *aVersionBuffer = new uchar[aSize];
+		aGetFileVersionInfoFunc((char *)thePath.c_str(), 0, aSize, aVersionBuffer);
+		char *aBuffer;
+		if (aVerQueryValueFunc(aVersionBuffer, (char *)"\\StringFileInfo\\040904B0\\ProductVersion", (void **)&aBuffer,
+							   &aSize))
 		{
 			aProductVersion = aBuffer;
 		}
-		else if (aVerQueryValueFunc(aVersionBuffer,
-				(char*)"\\StringFileInfo\\040904E4\\ProductVersion",
-				(void**) &aBuffer,
-				&aSize))
+		else if (aVerQueryValueFunc(aVersionBuffer, (char *)"\\StringFileInfo\\040904E4\\ProductVersion",
+									(void **)&aBuffer, &aSize))
 		{
 			aProductVersion = aBuffer;
 		}
 
 		delete aVersionBuffer;
 	}
-	
+
 	return aProductVersion;
 #else
 	return "unknown";
@@ -647,16 +643,11 @@ void AppBase::TakeScreenshot()
 	filenameStream << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".png";
 	std::filesystem::path filePath = screenshotDir / filenameStream.str();
 
-    std::unique_ptr<ImageData> image = mRenderer->CaptureFrameBuffer();
-    if (!image)
-        return;
+	std::unique_ptr<ImageData> image = mRenderer->CaptureFrameBuffer();
+	if (!image)
+		return;
 
-    stbi_write_png(filePath.string().c_str(),
-                	image->width,
-                    image->height,
-                    4,
-                    image->pixels.data(),
-                    image->width * 4);
+	stbi_write_png(filePath.string().c_str(), image->width, image->height, 4, image->pixels.data(), image->width * 4);
 }
 
 void AppBase::DumpProgramInfo()
@@ -727,7 +718,7 @@ void AppBase::DumpProgramInfo()
 			aRLAlphaMemory = aNumPixels;
 		if (aGPUImage->mRLAdditiveData != nullptr)
 			aRLAdditiveMemory = aNumPixels;
-		//if (aGPUImage->mGPUData != nullptr)
+		// if (aGPUImage->mGPUData != nullptr)
 		//	aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
 
 		aMemorySize = aBitsMemory + aSurfaceMemory + aPalletizedMemory + aNativeAlphaMemory + aRLAlphaMemory +
@@ -739,8 +730,7 @@ void AppBase::DumpProgramInfo()
 		++anItr;
 	}
 
-	aDumpStream << "Total Image Allocation: " << CommaSeperate(aTotalMemory).c_str()
-				<< " bytes<BR>";
+	aDumpStream << "Total Image Allocation: " << CommaSeperate(aTotalMemory).c_str() << " bytes<BR>";
 	aDumpStream << "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=4>";
 
 	int aTotalMemorySize = 0;
@@ -800,7 +790,7 @@ void AppBase::DumpProgramInfo()
 			aRLAdditiveMemory = aNumPixels;
 		if (aGPUImage->mGPUData != nullptr)
 		{
-			//aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
+			// aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
 
 			aTextureFormatName = "ARGB8888"; // They are always like this
 		}
@@ -815,22 +805,15 @@ void AppBase::DumpProgramInfo()
 		aTotalRLAdditiveMemory += aRLAdditiveMemory;
 
 		char aStr[256];
-		sprintf(aStr, "%d x %d<BR>%s bytes", aGPUImage->mWidth, aGPUImage->mHeight,
-				CommaSeperate(aMemorySize).c_str());
+		sprintf(aStr, "%d x %d<BR>%s bytes", aGPUImage->mWidth, aGPUImage->mHeight, CommaSeperate(aMemorySize).c_str());
 		aDumpStream << "<TD ALIGN=RIGHT>" << aStr << "</TD>" << std::endl;
 
+		aDumpStream << "<TD>" << ((aBitsMemory != 0) ? "mBits<BR>" + CommaSeperate(aBitsMemory) : "&nbsp;") << "</TD>"
+					<< std::endl;
 		aDumpStream << "<TD>"
-					<< ((aBitsMemory != 0) ? "mBits<BR>" + CommaSeperate(aBitsMemory) : "&nbsp;")
+					<< ((aPalletizedMemory != 0) ? "Palletized<BR>" + CommaSeperate(aPalletizedMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<< ((aPalletizedMemory != 0)
-							? "Palletized<BR>" + CommaSeperate(aPalletizedMemory)
-							: "&nbsp;")
-					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<< ((aSurfaceMemory != 0)
-							? "DDSurface<BR>" + CommaSeperate(aSurfaceMemory)
-							: "&nbsp;")
+		aDumpStream << "<TD>" << ((aSurfaceMemory != 0) ? "DDSurface<BR>" + CommaSeperate(aSurfaceMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
 
 		aDumpStream << "<TD>"
@@ -839,31 +822,20 @@ void AppBase::DumpProgramInfo()
 							: "&nbsp;")
 					<< "</TD>" << std::endl;
 
-		aDumpStream << "<TD>"
-					<< (aGPUImage->mIsVolatile ? "Volatile" : "&nbsp;")
-					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << (aGPUImage->mIsVolatile ? "Volatile" : "&nbsp;") << "</TD>" << std::endl;
 
-		aDumpStream << "<TD>"
-					<< (aGPUImage->mForcedMode ? "Forced" : "&nbsp;")
-					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << (aGPUImage->mForcedMode ? "Forced" : "&nbsp;") << "</TD>" << std::endl;
 
-		aDumpStream << "<TD>"
-					<< (aGPUImage->mHasAlpha ? "HasAlpha" : "&nbsp;")
-					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << (aGPUImage->mHasAlpha ? "HasAlpha" : "&nbsp;") << "</TD>" << std::endl;
 
+		aDumpStream << "<TD>" << (aGPUImage->mHasTrans ? "HasTrans" : "&nbsp;") << "</TD>" << std::endl;
 		aDumpStream << "<TD>"
-					<< (aGPUImage->mHasTrans ? "HasTrans" : "&nbsp;")
+					<< ((aNativeAlphaMemory != 0) ? "NativeAlpha<BR>" + CommaSeperate(aNativeAlphaMemory) : "&nbsp;")
+					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << ((aRLAlphaMemory != 0) ? "RLAlpha<BR>" + CommaSeperate(aRLAlphaMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
 		aDumpStream << "<TD>"
-					<< ((aNativeAlphaMemory != 0) ? "NativeAlpha<BR>" + CommaSeperate(aNativeAlphaMemory) :"&nbsp;")
-					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<<((aRLAlphaMemory != 0) ? "RLAlpha<BR>" + CommaSeperate(aRLAlphaMemory) : "&nbsp;")
-					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<< ((aRLAdditiveMemory != 0)
-											  ? "RLAdditive<BR>" + CommaSeperate(aRLAdditiveMemory)
-											  : "&nbsp;")
+					<< ((aRLAdditiveMemory != 0) ? "RLAdditive<BR>" + CommaSeperate(aRLAdditiveMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
 		aDumpStream << "<TD>" << (aGPUImage->mFilePath.empty() ? "&nbsp;" : aGPUImage->mFilePath) << "</TD>"
 					<< std::endl;
@@ -873,7 +845,7 @@ void AppBase::DumpProgramInfo()
 		// Write thumb
 
 		// Use the existing GPUImage pointer directly instead of copying
-		GPUImage* aCopiedImage = aGPUImage;
+		GPUImage *aCopiedImage = aGPUImage;
 
 		ulong *aBits = aCopiedImage->GetBits();
 
@@ -938,10 +910,10 @@ double AppBase::GetLoadingThreadProgress()
 
 bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType, const uchar *theValue, ulong theLength)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path config = GetAppDataFolder() + mRegKey + "/registry.json"; // always registry.json
 	std::filesystem::create_directories(config.parent_path());
-	//SDL_Log("%s", config.string().c_str());
+	// SDL_Log("%s", config.string().c_str());
 
 	nlohmann::json j;
 	std::ifstream inFile(config);
@@ -1036,7 +1008,7 @@ bool AppBase::RegistryEraseKey(const PopString &_theKeyName)
 
 void AppBase::RegistryEraseValue(const PopString &_theValueName)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path configPath = GetAppDataFolder() + mRegKey + "/registry.json";
 	std::string keyName = _theValueName;
 
@@ -1082,7 +1054,7 @@ bool AppBase::RegistryRead(const std::string &theValueName, JSON_RTYPE *theType,
 bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength,
 							  ulong theKey)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path configPath = GetAppDataFolder() + mRegKey + "/registry.json";
 	if (!std::filesystem::exists(configPath) || !theType || !theValue || !theLength)
 		return false;
@@ -1155,7 +1127,7 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 
 bool AppBase::RegistryReadString(const std::string &theKey, std::string *theString)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path configPath = GetAppDataFolder() + mRegKey + "/registry.json";
 	if (!std::filesystem::exists(configPath) || !theString)
 		return false;
@@ -1183,7 +1155,7 @@ bool AppBase::RegistryReadString(const std::string &theKey, std::string *theStri
 
 bool AppBase::RegistryReadInteger(const std::string &theKey, int *theValue)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	if (!theValue)
 		return false;
 
@@ -1213,7 +1185,7 @@ bool AppBase::RegistryReadInteger(const std::string &theKey, int *theValue)
 
 bool AppBase::RegistryReadBoolean(const std::string &theKey, bool *theValue)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	if (!theValue)
 		return false;
 
@@ -1241,7 +1213,7 @@ bool AppBase::RegistryReadBoolean(const std::string &theKey, bool *theValue)
 
 bool AppBase::RegistryReadData(const std::string &theKey, uchar *theValue, ulong *theLength)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	if (!theValue || !theLength)
 		return false;
 
@@ -1737,7 +1709,7 @@ void AppBase::LogScreenSaverError(const std::string &theError)
 #ifdef _WIN32
 		fprintf(aFile, "%s %s %u\n", theError.c_str(), _strtime(aBuf), SDL_GetTicks());
 #else
-		char aBuf[9];  // HH:MM:SS
+		char aBuf[9]; // HH:MM:SS
 		time_t now = time(nullptr);
 		strftime(aBuf, sizeof(aBuf), "%H:%M:%S", localtime(&now));
 
@@ -1749,7 +1721,6 @@ void AppBase::LogScreenSaverError(const std::string &theError)
 
 void AppBase::BeginPopup()
 {
-
 }
 
 void AppBase::EndPopup()
@@ -1763,7 +1734,7 @@ void AppBase::EndPopup()
 	if (mWidgetManager->mDownButtons)
 	{
 		mWidgetManager->DoMouseUps();
-//		ReleaseCapture();
+		//		ReleaseCapture();
 	}
 }
 
@@ -1798,8 +1769,9 @@ void AppBase::Popup(const std::string &theString)
 
 	BeginPopup();
 	if (!mShutdown)
-		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK), GetString("FATAL_ERROR", "FATAL ERROR").c_str(), theString.c_str(), mWindow);
-					
+		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK),
+								 GetString("FATAL_ERROR", "FATAL ERROR").c_str(), theString.c_str(), mWindow);
+
 	EndPopup();
 }
 
@@ -1839,7 +1811,7 @@ void AppBase::RehupFocus()
 			mWidgetManager->LostFocus();
 			LostFocus();
 
-//			ReleaseCapture();
+			//			ReleaseCapture();
 			mWidgetManager->DoMouseUps();
 		}
 	}
@@ -2217,20 +2189,24 @@ void AppBase::MakeWindow()
 
 	if (!mRenderer)
 	{
+		//-- rendering
 		switch (mRendererAPI)
 		{
-			case RENDERER_SDL:
-			{
-				mRenderer = new SDLRenderer(this);
-				break;
-			}
-			case RENDERER_OPENGL:
-			{
-				mRenderer = new GLRenderer(this);
-				break;
-			}
+		case RENDERER_SDL: {
+			mRenderer = new SDLRenderer(this);
+			break;
 		}
-		
+		case RENDERER_OPENGL: {
+			mRenderer = new GLRenderer(this);
+			break;
+		}
+		default: {
+			// well, if we don't have a specified renderer then do SDL
+			mRenderer = new SDLRenderer(this);
+			break;
+		}
+		}
+		//-- end rendering
 
 		// Enable 3d setting
 		bool is3D = false;
@@ -2277,7 +2253,6 @@ void AppBase::MakeWindow()
 	//	SetTimer(mHWnd, 100, mFrameTime, nullptr);
 }
 
-
 bool AppBase::UpdateWindowIcon(Image *theImage)
 {
 	if (theImage != nullptr)
@@ -2293,7 +2268,6 @@ bool AppBase::UpdateWindowIcon(Image *theImage)
 	}
 	return false;
 }
-
 
 void AppBase::DeleteNativeImageData()
 {
@@ -2419,85 +2393,85 @@ void AppBase::SetAlphaDisabled(bool isDisabled)
 
 void AppBase::EnforceCursor()
 {
-    bool wantSysCursor = true;
-	
+	bool wantSysCursor = true;
+
 	SDL_SystemCursor sdlCursorType;
 
 	switch (mCursorNum)
 	{
-		case CURSOR_HAND:
-			sdlCursorType = SDL_SYSTEM_CURSOR_POINTER;
-			break;
-		case CURSOR_DRAGGING:
-			sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
-			break;
-		case CURSOR_TEXT:
-			sdlCursorType = SDL_SYSTEM_CURSOR_TEXT;
-			break;
-		case CURSOR_CIRCLE_SLASH:
-			sdlCursorType = SDL_SYSTEM_CURSOR_NOT_ALLOWED;
-			break;
-		case CURSOR_SIZEALL:
-			sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
-			break;
-		case CURSOR_SIZENESW:
-			sdlCursorType = SDL_SYSTEM_CURSOR_NESW_RESIZE;
-			break;
-		case CURSOR_SIZENS:
-			sdlCursorType = SDL_SYSTEM_CURSOR_NS_RESIZE;
-			break;
-		case CURSOR_SIZENWSE:
-			sdlCursorType = SDL_SYSTEM_CURSOR_NWSE_RESIZE;
-			break;
-		case CURSOR_SIZEWE:
-			sdlCursorType = SDL_SYSTEM_CURSOR_EW_RESIZE;
-			break;
-		case CURSOR_WAIT:
-			sdlCursorType = SDL_SYSTEM_CURSOR_WAIT;
-			break;
-		case CURSOR_NONE:
-			SDL_HideCursor();
-			return;
-		case CURSOR_POINTER:
-		default:
-			sdlCursorType = SDL_SYSTEM_CURSOR_DEFAULT;
-			break;
+	case CURSOR_HAND:
+		sdlCursorType = SDL_SYSTEM_CURSOR_POINTER;
+		break;
+	case CURSOR_DRAGGING:
+		sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
+		break;
+	case CURSOR_TEXT:
+		sdlCursorType = SDL_SYSTEM_CURSOR_TEXT;
+		break;
+	case CURSOR_CIRCLE_SLASH:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NOT_ALLOWED;
+		break;
+	case CURSOR_SIZEALL:
+		sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
+		break;
+	case CURSOR_SIZENESW:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NESW_RESIZE;
+		break;
+	case CURSOR_SIZENS:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NS_RESIZE;
+		break;
+	case CURSOR_SIZENWSE:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NWSE_RESIZE;
+		break;
+	case CURSOR_SIZEWE:
+		sdlCursorType = SDL_SYSTEM_CURSOR_EW_RESIZE;
+		break;
+	case CURSOR_WAIT:
+		sdlCursorType = SDL_SYSTEM_CURSOR_WAIT;
+		break;
+	case CURSOR_NONE:
+		SDL_HideCursor();
+		return;
+	case CURSOR_POINTER:
+	default:
+		sdlCursorType = SDL_SYSTEM_CURSOR_DEFAULT;
+		break;
 	}
-	
-    if ((mSEHOccured) || (!mMouseIn))
-    {
+
+	if ((mSEHOccured) || (!mMouseIn))
+	{
 		SDL_Cursor *aCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
 		SDL_SetCursor(aCursor);
-    }
-    else
-    {
+	}
+	else
+	{
 
-        if ((mCursorImages[mCursorNum] == nullptr) || ((!mCustomCursorsEnabled) && (mCursorNum != CURSOR_CUSTOM)))
-        {
-            SDL_Cursor *aCursor = SDL_CreateSystemCursor(sdlCursorType);
+		if ((mCursorImages[mCursorNum] == nullptr) || ((!mCustomCursorsEnabled) && (mCursorNum != CURSOR_CUSTOM)))
+		{
+			SDL_Cursor *aCursor = SDL_CreateSystemCursor(sdlCursorType);
 			SDL_SetCursor(aCursor);
-        }
-        else
-        {
-			SDL_Surface *aSurface =
-				SDL_CreateSurfaceFrom(mCursorImages[mCursorNum]->mWidth, mCursorImages[mCursorNum]->mHeight, SDL_PIXELFORMAT_ARGB8888,
-									((SDLImage *)mCursorImages[mCursorNum])->GetBits(), mCursorImages[mCursorNum]->mWidth * sizeof(ulong));
+		}
+		else
+		{
+			SDL_Surface *aSurface = SDL_CreateSurfaceFrom(
+				mCursorImages[mCursorNum]->mWidth, mCursorImages[mCursorNum]->mHeight, SDL_PIXELFORMAT_ARGB8888,
+				((SDLImage *)mCursorImages[mCursorNum])->GetBits(), mCursorImages[mCursorNum]->mWidth * sizeof(ulong));
 
-			SDL_Cursor *aCursor = SDL_CreateColorCursor(aSurface, mCursorImages[mCursorNum]->mWidth / 2, mCursorImages[mCursorNum]->mHeight / 2);
+			SDL_Cursor *aCursor = SDL_CreateColorCursor(aSurface, mCursorImages[mCursorNum]->mWidth / 2,
+														mCursorImages[mCursorNum]->mHeight / 2);
 
 			SDL_SetCursor(aCursor);
 
 			SDL_DestroySurface(aSurface);
+		}
+	}
 
-        }
-    }
+	if (wantSysCursor != mSysCursor)
+	{
+		mSysCursor = wantSysCursor;
 
-    if (wantSysCursor != mSysCursor)
-    {
-        mSysCursor = wantSysCursor;
-
-        // Optionally show/hide cursor if needed here
-    }
+		// Optionally show/hide cursor if needed here
+	}
 }
 
 void AppBase::ProcessSafeDeleteList()
@@ -2862,7 +2836,6 @@ int AppBase::InitInterface()
 
 		mIGUIManager = new ImGuiManager(mRenderer);
 		RegisterImGuiWindows();
-
 	}
 	return aResult;
 }
@@ -3099,25 +3072,61 @@ void AppBase::SetDouble(const std::string &theId, double theValue)
 		aPair.first->second = theValue;
 }
 
+#if defined(__APPLE__)
+// macOS: access the argv pointer provided by the runtime
+extern "C"
+{
+	extern char ***_NSGetArgv();
+	extern int *_NSGetArgc();
+}
+#endif
+
 void AppBase::DoParseCmdLine()
 {
+	std::string cmdLine;
+
 #ifdef _WIN32
-	char *aCmdLine = GetCommandLineA();
-	char *aCmdLinePtr = aCmdLine;
-	if (aCmdLinePtr[0] == '"')
+	cmdLine = GetCommandLineA();
+
+#elif defined(__APPLE__)
+	// macOS: grab argc/argv from the Obj-C runtime
+	int argc = *_NSGetArgc();
+	char **argv = *_NSGetArgv();
+	for (int i = 0; i < argc; ++i)
 	{
-		aCmdLinePtr = strchr(aCmdLinePtr + 1, '"');
-		if (aCmdLinePtr != nullptr)
-			aCmdLinePtr++;
+		if (i)
+			cmdLine += ' ';
+		cmdLine += argv[i];
+	}
+#else
+	std::ifstream f("/proc/self/cmdline", std::ios::binary);
+	if (f)
+	{
+		std::string arg;
+		// /proc/self/cmdline is a sequence of NUL-terminated strings:
+		while (std::getline(f, arg, '\0'))
+		{
+			if (!cmdLine.empty())
+				cmdLine += ' ';
+			cmdLine += arg;
+		}
+	}
+#endif
+
+	size_t pos = 0;
+	if (!cmdLine.empty() && cmdLine[0] == '"')
+	{
+		// skip leading quoted exe-path
+		pos = cmdLine.find('"', 1);
+		if (pos != std::string::npos)
+			++pos;
 	}
 
-	if (aCmdLinePtr != nullptr)
+	pos = cmdLine.find(' ', pos);
+	if (pos != std::string::npos)
 	{
-		aCmdLinePtr = strchr(aCmdLinePtr, ' ');
-		if (aCmdLinePtr != nullptr)
-			ParseCmdLine(aCmdLinePtr + 1);
+		ParseCmdLine(cmdLine.c_str() + pos + 1);
 	}
-#endif	
 
 	mCmdLineParsed = true;
 }
@@ -3170,37 +3179,42 @@ void AppBase::ParseCmdLine(const std::string &theCmdLine)
 static int GetMaxDemoFileNum(const std::string &theDemoPrefix, int theMaxToKeep, bool doErase)
 {
 	typedef std::set<int> IntSet;
-    IntSet aSet;
+	IntSet aSet;
 
-    std::string prefixDir = fs::path(theDemoPrefix).parent_path().string();
-    std::string prefixBase = fs::path(theDemoPrefix).filename().string(); // just the prefix, e.g., "demo"
+	std::string prefixDir = fs::path(theDemoPrefix).parent_path().string();
+	std::string prefixBase = fs::path(theDemoPrefix).filename().string(); // just the prefix, e.g., "demo"
 
-    if (prefixDir.empty()) prefixDir = "."; // use current dir if none
+	if (prefixDir.empty())
+		prefixDir = "."; // use current dir if none
 
-    std::regex pattern("^" + prefixBase + R"((\d+)\.dmo$)");
+	std::regex pattern("^" + prefixBase + R"((\d+)\.dmo$)");
 
-    for (const auto& entry : fs::directory_iterator(prefixDir)) {
-        if (!entry.is_regular_file()) continue;
+	for (const auto &entry : fs::directory_iterator(prefixDir))
+	{
+		if (!entry.is_regular_file())
+			continue;
 
-        std::smatch match;
-        std::string filename = entry.path().filename().string();
+		std::smatch match;
+		std::string filename = entry.path().filename().string();
 
-        if (std::regex_match(filename, match, pattern)) {
-            int num = std::stoi(match[1]);
-            aSet.insert(num);
-        }
-    }
+		if (std::regex_match(filename, match, pattern))
+		{
+			int num = std::stoi(match[1]);
+			aSet.insert(num);
+		}
+	}
 
-    if (!aSet.empty() && (int)aSet.size() > theMaxToKeep - 1 && doErase) {
-        auto anItr = aSet.begin();
-        std::string fileToDelete = theDemoPrefix + std::to_string(*anItr) + ".dmo";
-        fs::remove(fileToDelete);
-    }
+	if (!aSet.empty() && (int)aSet.size() > theMaxToKeep - 1 && doErase)
+	{
+		auto anItr = aSet.begin();
+		std::string fileToDelete = theDemoPrefix + std::to_string(*anItr) + ".dmo";
+		fs::remove(fileToDelete);
+	}
 
-    if (aSet.empty())
-        return 0;
+	if (aSet.empty())
+		return 0;
 
-    return *aSet.rbegin(); // last (max) value
+	return *aSet.rbegin(); // last (max) value
 }
 
 void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::string &theParamValue)
@@ -3219,6 +3233,7 @@ void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::str
 	{
 		mChangeDirTo = theParamValue;
 	}
+	//-- rendering
 	else if (theParamName == "-sdlrenderer")
 	{
 		mRendererAPI = RENDERER_SDL;
@@ -3227,6 +3242,7 @@ void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::str
 	{
 		mRendererAPI = RENDERER_OPENGL;
 	}
+	//-- end rendering
 	else
 	{
 		Popup(GetString("INVALID_COMMANDLINE_PARAM", "Invalid command line parameter: ") + theParamName);
@@ -3310,7 +3326,7 @@ void AppBase::Init()
 	{
 		// How can we be windowed if our screen isn't even big enough?
 		SDL_DisplayID displayID = SDL_GetPrimaryDisplay();
-		const SDL_DisplayMode* dm = SDL_GetCurrentDisplayMode(displayID);
+		const SDL_DisplayMode *dm = SDL_GetCurrentDisplayMode(displayID);
 		int screenWidth = dm->w;
 		int screenHeight = dm->h;
 
@@ -3381,7 +3397,7 @@ void AppBase::EnableCustomCursors(bool enabled)
 
 void AppBase::SetTaskBarIcon(const std::string &theFileName)
 {
-	// H521
+	// we use SDL to load taskbar icons
 	int width, height, channels;
 	unsigned char *data = stbi_load(theFileName.c_str(), &width, &height, &channels, 4);
 	if (!data)
@@ -3390,7 +3406,7 @@ void AppBase::SetTaskBarIcon(const std::string &theFileName)
 		return;
 	}
 
-	SDL_Surface *surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, data, width*4);
+	SDL_Surface *surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4);
 	if (!surface)
 	{
 		SDL_Log("no surface?\n");
@@ -3415,14 +3431,15 @@ PopLib::GPUImage *AppBase::GetImage(const std::string &theFileName, bool commitB
 
 	GPUImage *anImage = mRenderer->NewGPUImage();
 	anImage->mFilePath = theFileName;
-	anImage->SetBits((uint32_t*)aLoadedImage->GetBits(), aLoadedImage->GetWidth(), aLoadedImage->GetHeight(), commitBits);
+	anImage->SetBits((uint32_t *)aLoadedImage->GetBits(), aLoadedImage->GetWidth(), aLoadedImage->GetHeight(),
+					 commitBits);
 	delete aLoadedImage;
 
 	return anImage;
 }
 
 PopLib::GPUImage *AppBase::CreateCrossfadeImage(PopLib::Image *theImage1, const Rect &theRect1,
-												 PopLib::Image *theImage2, const Rect &theRect2, double theFadeFactor)
+												PopLib::Image *theImage2, const Rect &theRect2, double theFadeFactor)
 {
 	GPUImage *aGPUImage1 = dynamic_cast<GPUImage *>(theImage1);
 	GPUImage *aGPUImage2 = dynamic_cast<GPUImage *>(theImage2);
@@ -3693,7 +3710,7 @@ void AppBase::RotateImageHue(PopLib::GPUImage *theImage, int theDelta)
 		theDelta += 256;
 
 	int aSize = theImage->mWidth * theImage->mHeight;
-	uint32_t* aPtr = reinterpret_cast<uint32_t*>(theImage->GetBits());
+	uint32_t *aPtr = reinterpret_cast<uint32_t *>(theImage->GetBits());
 	for (int i = 0; i < aSize; i++)
 	{
 		uint32_t aPixel = *aPtr;

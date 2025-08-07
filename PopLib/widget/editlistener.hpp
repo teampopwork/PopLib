@@ -1,8 +1,7 @@
 #ifndef __EDITLISTENER_HPP__
 #define __EDITLISTENER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "misc/keycodes.hpp"

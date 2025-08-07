@@ -1,8 +1,7 @@
 #ifndef __MEMORYIMAGE_HPP__
 #define __MEMORYIMAGE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "image.hpp"
 

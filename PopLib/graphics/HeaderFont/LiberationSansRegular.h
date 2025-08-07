@@ -1,8 +1,7 @@
 #ifndef __LSR_H_
 #define __LSR_H_
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <cstddef>
 

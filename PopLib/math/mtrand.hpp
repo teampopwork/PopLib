@@ -1,8 +1,7 @@
 #ifndef __MTRAND_HPP__
 #define __MTRAND_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <string>
 #include <random>

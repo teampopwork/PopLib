@@ -1,8 +1,7 @@
 #ifndef __GPUIMAGE_HPP__
 #define __GPUIMAGE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "memoryimage.hpp"
 

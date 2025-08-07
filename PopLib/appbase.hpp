@@ -1,8 +1,7 @@
 #ifndef __APPBASE_HPP__
 #define __APPBASE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "math/rect.hpp"
@@ -39,10 +38,10 @@ enum JSON_RTYPE
 enum RendererAPI
 {
 	RENDERER_NONE = 0,
-	RENDERER_SDL,	//SDL Renderer
-	RENDERER_OPENGL,	//GLRenderer
-	RENDERER_NUM,	//number of renderer APIs
-	RENDERER_3D_ACCEL = RENDERER_OPENGL, //3D Accelerated APIs
+	RENDERER_SDL,							// SDLRenderer
+	RENDERER_OPENGL,						// GLRenderer
+	RENDERER_NUM,							// number of renderer APIs
+	RENDERER_3D_ACCEL = RENDERER_OPENGL, 	// 3D Accelerated APIs
 };
 
 namespace ImageLib

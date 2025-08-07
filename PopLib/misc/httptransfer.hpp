@@ -1,8 +1,7 @@
 #ifndef __HTTPTRANSFER_HPP__
 #define __HTTPTRANSFER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #ifndef CURL_STATICLIB
 #define CURL_STATICLIB

@@ -1,8 +1,7 @@
 #ifndef __BUFFER_HPP__
 #define __BUFFER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <string>
 #include "common.hpp"

@@ -1,8 +1,7 @@
 #ifndef __CHECKBOX_HPP__
 #define __CHECKBOX_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "widget.hpp"
 

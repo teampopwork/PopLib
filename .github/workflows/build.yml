@@ -42,13 +42,36 @@ jobs:
           - os: windows-2025
             arch: x64
             cmake_arch: x64
+            build_type: Release
+          - os: windows-2025
+            arch: x64
+            cmake_arch: x64
+            build_type: Debug
           - os: windows-2025
             arch: x86
             cmake_arch: Win32
+            build_type: Release
+          - os: windows-2025
+            arch: x86
+            cmake_arch: Win32
+            build_type: Debug
           - os: ubuntu-latest
             arch: x64
             cmake_arch: native
-    name: Build ${{ matrix.arch }} on ${{ matrix.os }}
+            build_type: Release
+          - os: ubuntu-latest
+            arch: x64
+            cmake_arch: native
+            build_type: Debug
+          - os: macos-latest
+            arch: x64
+            cmake_arch: native
+            build_type: Release
+          - os: macos-latest
+            arch: x64
+            cmake_arch: native
+            build_type: Debug
+    name: Build ${{ matrix.build_type }} ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -69,20 +92,25 @@ jobs:
             libxrandr-dev libxext-dev libdrm-dev libgbm-dev \
             libwayland-dev libegl1-mesa-dev libfreetype6-dev libharfbuzz-dev
 
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install freetype harfbuzz
+
       - name: Configure
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -S . -B build_${{ matrix.arch }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.cmake_arch }}
+            cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -A ${{ matrix.cmake_arch }}
           else
-            cmake -S . -B build_${{ matrix.arch }} -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+            cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           fi
         shell: bash
 
       - name: Build
-        run: cmake --build build_${{ matrix.arch }} --config Release
+        run: cmake --build build_${{ matrix.arch }}_${{ matrix.build_type }} --config ${{ matrix.build_type }}
 
       - name: Install
-        run: cmake --install build_${{ matrix.arch }} --config Release
+        run: cmake --install build_${{ matrix.arch }}_${{ matrix.build_type }} --config ${{ matrix.build_type }}
 
       - name: Organize output
         shell: bash
@@ -91,19 +119,21 @@ jobs:
           cp VERSION dist/
 
           if [[ -d examples/bin ]]; then
-           cp -r examples/bin/. dist/examples/
+            cp -r examples/bin/. dist/examples/
           else
-           echo "warning: examples/bin does not exist."
+            echo "warning: examples/bin does not exist."
           fi
 
           if [[ "$RUNNER_OS" == "Windows" && -d tools ]]; then
             cp -r tools/*.exe dist/tools/ || echo "tools not found"
+          elif [[ "$RUNNER_OS" == "macOS" && -d tools ]]; then
+            cp -r tools/* dist/tools/ || echo "tools not found"
           fi
 
       - name: Upload dist directory
         uses: actions/upload-artifact@v4
         with:
-          name: PopLib-${{ needs.version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
+          name: PopLib-${{ needs.version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}
           path: dist/
 
   release:

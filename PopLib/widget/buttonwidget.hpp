@@ -1,8 +1,7 @@
 #ifndef __BUTTONWIDGET_HPP__
 #define __BUTTONWIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "widget.hpp"
 

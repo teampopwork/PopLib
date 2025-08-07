@@ -1,8 +1,7 @@
 #ifndef __WIDGETCONTAINER_HPP__
 #define __WIDGETCONTAINER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "math/rect.hpp"

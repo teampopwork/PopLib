@@ -1,8 +1,7 @@
 #ifndef __VECTOR_HPP__
 #define __VECTOR_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "math.hpp"
 

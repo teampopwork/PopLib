@@ -1,8 +1,7 @@
 #ifndef __SWTRI_H_
 #define __SWTRI_H_
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 // dirty hacks but fuck it
 #include "../color.hpp"

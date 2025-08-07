@@ -98,7 +98,6 @@ target_include_directories(${PROJECT_NAME}
         ${POPLIB_ROOT_DIR}/external/stb_image
 )
 
-
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 	STB_IMAGE_IMPLEMENTATION
 	STBI_MSC_SECURE_CRT
@@ -107,6 +106,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 if (WIN32)
     set(BASS_LIB_PATH "${BASS_LIB_PATH}/bass.lib")
+elseif (APPLE)
+    set(BASS_LIB_PATH "${BASS_LIB_PATH}/libbass.dylib")
 elseif (UNIX)
     set(BASS_LIB_PATH "${BASS_LIB_PATH}/libbass.so")
 endif()

@@ -1,8 +1,7 @@
 #ifndef __RECT_HPP__
 #define __RECT_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "point.hpp"

@@ -16,6 +16,8 @@ namespace PopLib
 {
 #ifdef _WIN32
 std::string gAppDataFolder = std::filesystem::path(std::getenv("LOCALAPPDATA")).string() + "/";
+#elif __APPLE__
+std::string gAppDataFolder = std::filesystem::path(std::getenv("HOME")).string() + "/Library/Application Support/";
 #else
 std::string gAppDataFolder = std::filesystem::path(std::getenv("HOME")).string() + "/.config/";
 #endif
@@ -58,7 +60,7 @@ std::string PopLib::GetAppDataFolder()
 
 void PopLib::SetAppDataFolder(const std::string &thePath)
 {
-	/*
+#if NEVER
 	std::string aPath = thePath;
 	if (!aPath.empty())
 	{
@@ -67,7 +69,7 @@ void PopLib::SetAppDataFolder(const std::string &thePath)
 	}
 
 	PopLib::gAppDataFolder = aPath;
-	*/
+#endif
 }
 
 std::string PopLib::URLEncode(const std::string &theString)

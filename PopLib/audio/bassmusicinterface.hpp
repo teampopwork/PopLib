@@ -1,8 +1,7 @@
 #ifndef __BASSMUSICINTERFACE_HPP__
 #define __BASSMUSICINTERFACE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "musicinterface.hpp"
 #include "bass.h"

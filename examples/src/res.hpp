@@ -1,8 +1,7 @@
 #ifndef __RES_H_
 #define __RES_H_
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 namespace PopLib
 {

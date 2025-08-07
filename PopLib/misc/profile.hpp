@@ -1,8 +1,7 @@
 #ifndef __PROFILE_HPP__
 #define __PROFILE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include <map>

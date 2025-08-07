@@ -1,8 +1,7 @@
 #ifndef __COMMON_HPP__
 #define __COMMON_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #pragma warning(disable : 4786)
 #pragma warning(disable : 4503)
@@ -49,9 +48,7 @@
 #include <stdint.h>
 
 #define _stricmp strcasecmp
-#ifndef _WIN32
 #define stricmp strcasecmp
-#endif
 
 #define _cdecl
 typedef uint8_t BYTE;

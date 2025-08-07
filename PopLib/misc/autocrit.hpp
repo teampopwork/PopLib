@@ -1,8 +1,7 @@
 #ifndef __AUTOCRIT_HPP__
 #define __AUTOCRIT_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "critsect.hpp"

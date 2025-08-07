@@ -40,7 +40,7 @@ void GLImage::Create(int theWidth, int theHeight)
 }
 
 bool GLImage::PolyFill3D(const Point theVertices[], int theNumVertices, const Rect *theClipRect, const Color &theColor,
-						  int theDrawMode, int tx, int ty)
+						 int theDrawMode, int tx, int ty)
 {
 	mRenderer->FillPoly(theVertices, theNumVertices, theClipRect, theColor, theDrawMode, tx, ty);
 	return true;
@@ -52,13 +52,13 @@ void GLImage::FillRect(const Rect &theRect, const Color &theColor, int theDrawMo
 }
 
 void GLImage::DrawLine(double theStartX, double theStartY, double theEndX, double theEndY, const Color &theColor,
-						int theDrawMode)
+					   int theDrawMode)
 {
 	mRenderer->DrawLine(theStartX, theStartY, theEndX, theEndY, theColor, theDrawMode);
 }
 
 void GLImage::DrawLineAA(double theStartX, double theStartY, double theEndX, double theEndY, const Color &theColor,
-						  int theDrawMode)
+						 int theDrawMode)
 {
 	mRenderer->DrawLine(theStartX, theStartY, theEndX, theEndY, theColor, theDrawMode);
 }
@@ -73,7 +73,7 @@ void GLImage::Blt(Image *theImage, int theX, int theY, const Rect &theSrcRect, c
 }
 
 void GLImage::BltF(Image *theImage, float theX, float theY, const Rect &theSrcRect, const Rect &theClipRect,
-					const Color &theColor, int theDrawMode)
+				   const Color &theColor, int theDrawMode)
 {
 	theImage->mDrawn = true;
 
@@ -91,19 +91,19 @@ void GLImage::BltF(Image *theImage, float theX, float theY, const Rect &theSrcRe
 }
 
 void GLImage::BltRotated(Image *theImage, float theX, float theY, const Rect &theSrcRect, const Rect &theClipRect,
-						  const Color &theColor, int theDrawMode, double theRot, float theRotCenterX,
-						  float theRotCenterY)
+						 const Color &theColor, int theDrawMode, double theRot, float theRotCenterX,
+						 float theRotCenterY)
 {
 	theImage->mDrawn = true;
 
 	CommitBits();
 
 	mRenderer->BltRotated(theImage, theX, theY, &theClipRect, theColor, theDrawMode, theRot, theRotCenterX,
-						   theRotCenterY, theSrcRect);
+						  theRotCenterY, theSrcRect);
 }
 
 void GLImage::StretchBlt(Image *theImage, const Rect &theDestRect, const Rect &theSrcRect, const Rect &theClipRect,
-						  const Color &theColor, int theDrawMode, bool fastStretch)
+						 const Color &theColor, int theDrawMode, bool fastStretch)
 {
 	theImage->mDrawn = true;
 
@@ -113,7 +113,7 @@ void GLImage::StretchBlt(Image *theImage, const Rect &theDestRect, const Rect &t
 }
 
 void GLImage::BltMatrix(Image *theImage, float x, float y, const Matrix3 &theMatrix, const Rect &theClipRect,
-						 const Color &theColor, int theDrawMode, const Rect &theSrcRect, bool blend)
+						const Color &theColor, int theDrawMode, const Rect &theSrcRect, bool blend)
 {
 	theImage->mDrawn = true;
 
@@ -121,8 +121,8 @@ void GLImage::BltMatrix(Image *theImage, float x, float y, const Matrix3 &theMat
 }
 
 void GLImage::BltTrianglesTex(Image *theTexture, const TriVertex theVertices[][3], int theNumTriangles,
-							   const Rect &theClipRect, const Color &theColor, int theDrawMode, float tx, float ty,
-							   bool blend)
+							  const Rect &theClipRect, const Color &theColor, int theDrawMode, float tx, float ty,
+							  bool blend)
 {
 	theTexture->mDrawn = true;
 
@@ -130,7 +130,7 @@ void GLImage::BltTrianglesTex(Image *theTexture, const TriVertex theVertices[][3
 }
 
 void GLImage::BltMirror(Image *theImage, int theX, int theY, const Rect &theSrcRect, const Color &theColor,
-						 int theDrawMode)
+						int theDrawMode)
 {
 	theImage->mDrawn = true;
 
@@ -140,19 +140,19 @@ void GLImage::BltMirror(Image *theImage, int theX, int theY, const Rect &theSrcR
 }
 
 void GLImage::StretchBltMirror(Image *theImage, const Rect &theDestRectOrig, const Rect &theSrcRect,
-								const Rect &theClipRect, const Color &theColor, int theDrawMode, bool fastStretch)
+							   const Rect &theClipRect, const Color &theColor, int theDrawMode, bool fastStretch)
 {
 	theImage->mDrawn = true;
 
 	CommitBits();
 
 	mRenderer->StretchBlt(theImage, theDestRectOrig, theSrcRect, &theClipRect, theColor, theDrawMode, fastStretch,
-						   true);
+						  true);
 }
 
 void GLImage::FillScanLinesWithCoverage(Span *theSpans, int theSpanCount, const Color &theColor, int theDrawMode,
-										 const BYTE *theCoverage, int theCoverX, int theCoverY, int theCoverWidth,
-										 int theCoverHeight)
+										const BYTE *theCoverage, int theCoverX, int theCoverY, int theCoverWidth,
+										int theCoverHeight)
 {
 	if (theSpanCount == 0)
 		return;

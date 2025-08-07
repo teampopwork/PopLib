@@ -1,8 +1,7 @@
 #ifndef __OPENALSOUNDMANAGER_HPP__
 #define __OPENALSOUNDMANAGER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "soundmanager.hpp"
 

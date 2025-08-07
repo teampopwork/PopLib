@@ -1,8 +1,7 @@
 #ifndef __QUANTIZE_HPP__
 #define __QUANTIZE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 

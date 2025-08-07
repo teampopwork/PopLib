@@ -1,8 +1,7 @@
 #ifndef __TRIVERTEX_HPP__
 #define __TRIVERTEX_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <cstdint>
 

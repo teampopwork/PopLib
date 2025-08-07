@@ -1,8 +1,7 @@
 #ifndef __SOUNDINSTANCE_HPP__
 #define __SOUNDINSTANCE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 

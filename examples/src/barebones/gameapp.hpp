@@ -1,8 +1,7 @@
 #ifndef __GAMEAPP_HPP__
 #define __GAMEAPP_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "PopLib/popapp.hpp"
 

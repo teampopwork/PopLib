@@ -12,7 +12,7 @@
 
 using namespace PopLib;
 
-SDL_FPoint TransformToPoint(float x, float y, const Matrix3 &m, float aTransX = 0, float aTransY = 0)
+SDL_FPoint TransformToPointSDL(float x, float y, const Matrix3 &m, float aTransX = 0, float aTransY = 0)
 {
 	SDL_FPoint result;
 	result.x = m.m00 * x + m.m01 * y + m.m02 + aTransX;
@@ -631,10 +631,10 @@ void SDLRenderer::BltTransformed(Image *theImage, const Rect *theClipRect, const
 						 theColor.GetAlpha() / 255.0f};
 
 	SDL_Vertex vertices[4] = {
-		{TransformToPoint(x1, y1, theTransform, theX, theY), aColor, {u1, v1}}, // TL
-		{TransformToPoint(x2, y2, theTransform, theX, theY), aColor, {u2, v1}}, // TR
-		{TransformToPoint(x3, y3, theTransform, theX, theY), aColor, {u1, v2}}, // BL
-		{TransformToPoint(x4, y4, theTransform, theX, theY), aColor, {u2, v2}}	// BR
+		{TransformToPointSDL(x1, y1, theTransform, theX, theY), aColor, {u1, v1}}, // TL
+		{TransformToPointSDL(x2, y2, theTransform, theX, theY), aColor, {u2, v1}}, // TR
+		{TransformToPointSDL(x3, y3, theTransform, theX, theY), aColor, {u1, v2}}, // BL
+		{TransformToPointSDL(x4, y4, theTransform, theX, theY), aColor, {u2, v2}}	// BR
 	};
 
 	int indices[] = {0, 1, 2, 1, 3, 2};

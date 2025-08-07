@@ -1,8 +1,7 @@
 #ifndef __LISTLISTENER_HPP__
 #define __LISTLISTENER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 namespace PopLib
 {

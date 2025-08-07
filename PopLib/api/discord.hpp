@@ -1,8 +1,7 @@
 #ifndef __DISCORD_HPP__
 #define __DISCORD_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #ifdef _FEATURE_DISCORD_RPC
 

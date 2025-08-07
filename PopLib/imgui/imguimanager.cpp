@@ -57,6 +57,14 @@ ImGuiManager::ImGuiManager(Renderer *theInterface)
 			ImGui_ImplOpenGL3_Init();
 			break;
 		}
+		default:
+		{
+			// in appbase.cpp we're using SDL as default, so do we here
+			SDLRenderer *aInterface = (SDLRenderer*)mRenderer;
+			ImGui_ImplSDL3_InitForSDLRenderer(gAppBase->mWindow, aInterface->mRenderer);
+			ImGui_ImplSDLRenderer3_Init(aInterface->mRenderer);
+			break;
+		}
 	}
 }
 
@@ -83,6 +91,13 @@ void ImGuiManager::Frame(void)
 		case RENDERER_OPENGL:
 		{
 			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplSDL3_NewFrame();
+			break;
+		}
+		default:
+		{
+			// in appbase.cpp we're using SDL as default, so do we here
+			ImGui_ImplSDLRenderer3_NewFrame();
 			ImGui_ImplSDL3_NewFrame();
 			break;
 		}

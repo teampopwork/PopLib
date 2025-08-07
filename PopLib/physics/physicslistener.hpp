@@ -23,9 +23,8 @@
 
 #ifndef __PHYSICSLISTENER_HPP__
 #define __PHYSICSLISTENER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 namespace PopLib
 {

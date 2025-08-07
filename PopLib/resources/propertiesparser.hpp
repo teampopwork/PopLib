@@ -1,8 +1,7 @@
 #ifndef __PROPERTIES_PARSER_HPP__
 #define __PROPERTIES_PARSER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "appbase.hpp"
 

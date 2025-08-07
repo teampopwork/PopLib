@@ -1,8 +1,7 @@
 #ifndef __RATIO_HPP__
 #define __RATIO_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 namespace PopLib
 {
