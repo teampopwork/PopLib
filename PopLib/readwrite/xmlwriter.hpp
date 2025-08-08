@@ -44,8 +44,7 @@ class XMLWriter
 	XMLWriter();
 	virtual ~XMLWriter();
 
-	static bool AddAttribute(XMLElement *theElement, const PopString &aAttributeKey,
-							 const PopString &aAttributeValue);
+	static bool AddAttribute(XMLElement *theElement, const PopString &aAttributeKey, const PopString &aAttributeValue);
 	bool WriteAttribute(const PopString &aAttributeKey, const PopString &aAttributeValue);
 	bool WriteAttribute(const PopString &aAttributeKey, const float &aAttributeValue);
 	bool WriteAttribute(const PopString &aAttributeKey, const int &aAttributeValue);

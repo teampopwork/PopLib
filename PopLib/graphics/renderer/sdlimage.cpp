@@ -99,7 +99,7 @@ void SDLImage::BltRotated(Image *theImage, float theX, float theY, const Rect &t
 	CommitBits();
 
 	mRenderer->BltRotated(theImage, theX, theY, &theClipRect, theColor, theDrawMode, theRot, theRotCenterX,
-						   theRotCenterY, theSrcRect);
+						  theRotCenterY, theSrcRect);
 }
 
 void SDLImage::StretchBlt(Image *theImage, const Rect &theDestRect, const Rect &theSrcRect, const Rect &theClipRect,
@@ -147,7 +147,7 @@ void SDLImage::StretchBltMirror(Image *theImage, const Rect &theDestRectOrig, co
 	CommitBits();
 
 	mRenderer->StretchBlt(theImage, theDestRectOrig, theSrcRect, &theClipRect, theColor, theDrawMode, fastStretch,
-						   true);
+						  true);
 }
 
 void SDLImage::FillScanLinesWithCoverage(Span *theSpans, int theSpanCount, const Color &theColor, int theDrawMode,

@@ -49,7 +49,8 @@ void SDLRenderer::DrawText(int theY, int theX, const PopString &theText, const C
 	SDL_Surface *textSurface = TTF_RenderText_Blended(theFont, theText.c_str(), 0, aColor);
 	if (!textSurface)
 	{
-		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK), "Failed to render text: ", SDL_GetError(), mApp->mWindow);
+		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK), "Failed to render text: ", SDL_GetError(),
+								 mApp->mWindow);
 		return;
 	}
 	SDL_Texture *textTexture = SDL_CreateTextureFromSurface(mRenderer, textSurface);
@@ -58,7 +59,8 @@ void SDLRenderer::DrawText(int theY, int theX, const PopString &theText, const C
 
 	if (!textTexture)
 	{
-		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK), "Failed to create texture from surface: ", SDL_GetError(), mApp->mWindow);
+		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK),
+								 "Failed to create texture from surface: ", SDL_GetError(), mApp->mWindow);
 		return;
 	}
 
@@ -425,7 +427,7 @@ int SDLTextureData::GetMemSize()
 /////////////////////////////////////////////////////////////////
 
 void SDLRenderer::Blt(Image *theImage, int theX, int theY, const Rect &theSrcRect, const Color &theColor,
-					   int theDrawMode, bool linearFilter)
+					  int theDrawMode, bool linearFilter)
 {
 	SDLImage *memImg = static_cast<SDLImage *>(theImage);
 	if (!CreateImageTexture(memImg))
@@ -451,7 +453,7 @@ void SDLRenderer::Blt(Image *theImage, int theX, int theY, const Rect &theSrcRec
 }
 
 void SDLRenderer::BltClipF(Image *theImage, float theX, float theY, const Rect &theSrcRect, const Rect *theClipRect,
-							const Color &theColor, int theDrawMode)
+						   const Color &theColor, int theDrawMode)
 {
 	SDLImage *aSrcSDLImage = (SDLImage *)theImage;
 
@@ -485,7 +487,7 @@ void SDLRenderer::BltClipF(Image *theImage, float theX, float theY, const Rect &
 }
 
 void SDLRenderer::BltMirror(Image *theImage, float theX, float theY, const Rect &theSrcRect, const Color &theColor,
-							 int theDrawMode, bool linearFilter)
+							int theDrawMode, bool linearFilter)
 {
 	SDLImage *aSrcSDLImage = (SDLImage *)theImage;
 
@@ -511,7 +513,7 @@ void SDLRenderer::BltMirror(Image *theImage, float theX, float theY, const Rect 
 }
 
 void SDLRenderer::StretchBlt(Image *theImage, const Rect &theDestRect, const Rect &theSrcRect, const Rect *theClipRect,
-							  const Color &theColor, int theDrawMode, bool fastStretch, bool mirror)
+							 const Color &theColor, int theDrawMode, bool fastStretch, bool mirror)
 {
 	SDLImage *aSrcSDLImage = static_cast<SDLImage *>(theImage);
 	if (!CreateImageTexture(aSrcSDLImage))
@@ -546,8 +548,8 @@ void SDLRenderer::StretchBlt(Image *theImage, const Rect &theDestRect, const Rec
 }
 
 void SDLRenderer::BltRotated(Image *theImage, float theX, float theY, const Rect *theClipRect, const Color &theColor,
-							  int theDrawMode, double theRot, float theRotCenterX, float theRotCenterY,
-							  const Rect &theSrcRect)
+							 int theDrawMode, double theRot, float theRotCenterX, float theRotCenterY,
+							 const Rect &theSrcRect)
 {
 	SDLImage *aSrcSDLImage = static_cast<SDLImage *>(theImage);
 	if (!CreateImageTexture(aSrcSDLImage))
@@ -583,8 +585,8 @@ void SDLRenderer::BltRotated(Image *theImage, float theX, float theY, const Rect
 }
 
 void SDLRenderer::BltTransformed(Image *theImage, const Rect *theClipRect, const Color &theColor, int theDrawMode,
-								  const Rect &theSrcRect, const Matrix3 &theTransform, bool linearFilter, float theX,
-								  float theY, bool center)
+								 const Rect &theSrcRect, const Matrix3 &theTransform, bool linearFilter, float theX,
+								 float theY, bool center)
 {
 	SDLImage *aSrcSDLImage = static_cast<SDLImage *>(theImage);
 
@@ -634,7 +636,7 @@ void SDLRenderer::BltTransformed(Image *theImage, const Rect *theClipRect, const
 		{TransformToPointSDL(x1, y1, theTransform, theX, theY), aColor, {u1, v1}}, // TL
 		{TransformToPointSDL(x2, y2, theTransform, theX, theY), aColor, {u2, v1}}, // TR
 		{TransformToPointSDL(x3, y3, theTransform, theX, theY), aColor, {u1, v2}}, // BL
-		{TransformToPointSDL(x4, y4, theTransform, theX, theY), aColor, {u2, v2}}	// BR
+		{TransformToPointSDL(x4, y4, theTransform, theX, theY), aColor, {u2, v2}}  // BR
 	};
 
 	int indices[] = {0, 1, 2, 1, 3, 2};
@@ -645,7 +647,7 @@ void SDLRenderer::BltTransformed(Image *theImage, const Rect *theClipRect, const
 }
 
 void SDLRenderer::DrawLine(double theStartX, double theStartY, double theEndX, double theEndY, const Color &theColor,
-							int theDrawMode)
+						   int theDrawMode)
 {
 	if (!mRenderer)
 		return;
@@ -680,7 +682,7 @@ void SDLRenderer::FillRect(const Rect &theRect, const Color &theColor, int theDr
 }
 
 void SDLRenderer::DrawTriangle(const TriVertex &p1, const TriVertex &p2, const TriVertex &p3, const Color &theColor,
-								int theDrawMode)
+							   int theDrawMode)
 {
 	SDL_SetRenderTarget(mRenderer, mScreenTexture);
 
@@ -698,7 +700,7 @@ void SDLRenderer::DrawTriangle(const TriVertex &p1, const TriVertex &p2, const T
 }
 
 void SDLRenderer::DrawTriangleTex(const TriVertex &p1, const TriVertex &p2, const TriVertex &p3, const Color &theColor,
-								   int theDrawMode, Image *theTexture, bool blend)
+								  int theDrawMode, Image *theTexture, bool blend)
 {
 	SDLImage *aSrcSDLImage = (SDLImage *)theTexture;
 
@@ -728,7 +730,7 @@ void SDLRenderer::DrawTriangleTex(const TriVertex &p1, const TriVertex &p2, cons
 }
 
 void SDLRenderer::DrawTrianglesTex(const TriVertex theVertices[][3], int theNumTriangles, const Color &theColor,
-									int theDrawMode, Image *theTexture, float tx, float ty, bool blend)
+								   int theDrawMode, Image *theTexture, float tx, float ty, bool blend)
 {
 	SDLImage *aSrcSDLImage = (SDLImage *)theTexture;
 
@@ -786,7 +788,7 @@ void SDLRenderer::DrawTrianglesTex(const TriVertex theVertices[][3], int theNumT
 }
 
 void SDLRenderer::DrawTrianglesTexStrip(const TriVertex theVertices[], int theNumTriangles, const Color &theColor,
-										 int theDrawMode, Image *theTexture, float tx, float ty, bool blend)
+										int theDrawMode, Image *theTexture, float tx, float ty, bool blend)
 {
 	if (theNumTriangles < 3)
 		return;
@@ -826,7 +828,7 @@ void SDLRenderer::DrawTrianglesTexStrip(const TriVertex theVertices[], int theNu
 }
 
 void SDLRenderer::FillPoly(const Point theVertices[], int theNumVertices, const Rect *theClipRect,
-							const Color &theColor, int theDrawMode, int tx, int ty)
+						   const Color &theColor, int theDrawMode, int tx, int ty)
 {
 	if (theNumVertices < 3)
 		if (theNumVertices == 2)
@@ -854,7 +856,7 @@ void SDLRenderer::FillPoly(const Point theVertices[], int theNumVertices, const 
 }
 
 void SDLRenderer::BltTexture(Texture *theTexture, const Rect &theSrcRect, const Rect &theDestRect,
-							  const Color &theColor, int theDrawMode)
+							 const Color &theColor, int theDrawMode)
 {
 	SDLTexture *sdlTex = dynamic_cast<SDLTexture *>(theTexture);
 	if (!sdlTex || !sdlTex->GetSDLTexture())

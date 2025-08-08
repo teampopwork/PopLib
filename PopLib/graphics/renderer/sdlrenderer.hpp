@@ -108,7 +108,6 @@ class SDLRenderer : public Renderer
 	virtual void DrawText(int theY, int theX, const PopString &theText, const Color &theColor, TTF_Font *theFont);
 
   public:
-
 	virtual bool PreDraw();
 
 	virtual bool CreateImageTexture(GPUImage *theImage);

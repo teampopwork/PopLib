@@ -101,7 +101,7 @@ bool BassMusicInterface::LoadMusic(int theSongId, const std::string &theFileName
 	}
 
 	int anErrCode = BASS_ErrorGetCode();
-	if ((!aHMusic && !aStream )|| anErrCode != BASS_OK)
+	if ((!aHMusic && !aStream) || anErrCode != BASS_OK)
 		return false;
 
 	BassMusicInfo aMusicInfo;

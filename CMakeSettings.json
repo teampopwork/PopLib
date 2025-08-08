@@ -12,11 +12,6 @@
       "ctestCommandArgs": "",
       "variables": [
         {
-          "name": "WideStrings",
-          "value": "False",
-          "type": "BOOL"
-        },
-        {
           "name": "BuildDemos",
           "value": "True",
           "type": "BOOL"

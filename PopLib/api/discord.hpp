@@ -7,36 +7,34 @@
 
 #include <discord-rpc.hpp>
 
-
 namespace PopLib
-{ 
-    struct RPCData
-    {
-        std::string mState;
-        std::string mDetails;
-        std::string mSmallImageName;
-        std::string mLargeImageName;
-    };
+{
+struct RPCData
+{
+	std::string mState;
+	std::string mDetails;
+	std::string mSmallImageName;
+	std::string mLargeImageName;
+};
 
-    class DiscordRPC
-    {
-    private:
+class DiscordRPC
+{
+  private:
+	std::string mAppID;
+	RPCData mRPCData;
 
-        std::string mAppID;
-        RPCData mRPCData;
+	bool InitRPC();
 
-        bool InitRPC();
-    public:
-        DiscordRPC(const char* theAppID = "1369297870456488057");
-        ~DiscordRPC();
-        void UpdateRPC();
-        int64_t mStartTime;
-        bool mSendRPC;
-        bool mHasInitialized;
-    };
+  public:
+	DiscordRPC(const char *theAppID = "1369297870456488057");
+	~DiscordRPC();
+	void UpdateRPC();
+	int64_t mStartTime;
+	bool mSendRPC;
+	bool mHasInitialized;
+};
 
 } // namespace PopLib
-
 
 #endif
 

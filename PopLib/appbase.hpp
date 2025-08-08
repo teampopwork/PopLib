@@ -1032,7 +1032,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theId 
 	/// @param theValue 
 	void SetDouble(const std::string &theId, double theValue);
-	/// @brief sets a string by id (string, widestring)
+	/// @brief sets a string by id (string)
 	/// @param theId 
 	/// @param theValue
 	void SetString(const std::string &theId, const std::string &theValue);
