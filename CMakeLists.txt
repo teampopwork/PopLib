@@ -84,11 +84,29 @@ FetchContent_Declare(
     GIT_TAG main
 )
 
-FetchContent_Declare(
-    OpenAL
-    GIT_REPOSITORY https://github.com/teampopwork/openal-soft
-    GIT_TAG master
-)
+# the most hackiest hacks i've ever done
+if(APPLE)
+    find_library(OPENAL_LIBRARY OpenAL REQUIRED)
+    find_path(OPENAL_INCLUDE_DIR AL/al.h 
+              PATHS /System/Library/Frameworks/OpenAL.framework/Headers)
+    
+    if(NOT OPENAL_LIBRARY)
+        message(FATAL_ERROR "System OpenAL framework not found")
+    endif()
+    
+    add_library(OpenAL::OpenAL INTERFACE IMPORTED)
+    set_target_properties(OpenAL::OpenAL PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${OPENAL_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${OPENAL_INCLUDE_DIR}"
+    )
+else()
+    FetchContent_Declare(
+		OpenAL
+		GIT_REPOSITORY https://github.com/teampopwork/openal-soft
+		GIT_TAG master
+	)
+    FetchContent_MakeAvailable(OpenAL)
+endif()
 
 FetchContent_Declare(
     miniaudio
@@ -132,7 +150,7 @@ FetchContent_Declare(
     GIT_TAG master
 )
 
-FetchContent_MakeAvailable(SDL3 SDL3_TTF OpenAL miniaudio ogg vorbis curl zlib discordrpc glm)
+FetchContent_MakeAvailable(SDL3 SDL3_TTF miniaudio ogg vorbis curl zlib discordrpc glm)
 
 add_subdirectory(external/misc EXCLUDE_FROM_ALL)
 add_subdirectory(PopLib)
