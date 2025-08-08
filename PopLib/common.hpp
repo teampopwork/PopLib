@@ -80,7 +80,7 @@ typedef unsigned int uint;
 #undef ulong
 #endif
 #define ulong uint32_t
-typedef __int64 int64;
+// int64 has been removed due to Steam API. I hate this job.
 
 typedef std::map<std::string, std::string> DefinesMap;
 typedef std::map<std::wstring, std::wstring> WStringWStringMap;

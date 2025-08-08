@@ -43,6 +43,14 @@ examples/bin/screenshots/*
 docs/doxygen/
 imgui.ini
 
+# IMPORTANT
+private/steam/sdk
+libsteam_api.so
+libsteam_api.dylib
+steam_api.dll
+steam_api64.dll
+steam_appid.txt
+
 # tools
 PopPak.exe
 PopPakPWE.exe

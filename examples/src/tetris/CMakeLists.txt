@@ -33,3 +33,6 @@ set_target_properties(${PROJECT_NAME}
 
 include(${POPLIB_ROOT_DIR}/cmake/CopyDLLPost.cmake)
 copy_dll_post(${PROJECT_NAME} ${BASS_PATH})
+if (FEATURE_STEAM_API)
+	copy_dll_post(${PROJECT_NAME} ${STEAMAPI_PATH})
+endif()

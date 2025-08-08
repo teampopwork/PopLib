@@ -31,6 +31,14 @@ cmake --build build --config Release
 
 You can keep `Release`, OR you can replace it with `Debug` for debugging purposes. And voilà, you've built **PopLib**!
 
+### Building with Steam API
+To build with Steam API support:
+1. Sign up for the Steamworks partner program
+2. Download the Steamworks SDK from https://partner.steamgames.com/downloads/
+3. Copy the the `sdk` folder (**FROM YOUR OWN COPY**) to the `private/steam/` directory
+4. In the top-level CMakeLists.txt, set the FEATURE_STEAM_API option to ON
+5. Do everything else to build
+
 ## Font Building
 
 ## Using other Tools

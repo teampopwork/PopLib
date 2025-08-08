@@ -7,7 +7,12 @@
 
 namespace PopLib
 {
+#ifdef POP_FEATURE_DISCORD_RPC
 class DiscordRPC;
+#endif
+#ifdef POP_FEATURE_STEAM_API
+class SteamAPI;
+#endif
 
 class PopApp : public AppBase
 {
@@ -16,6 +21,11 @@ class PopApp : public AppBase
 	DiscordRPC *mDiscordRPC;
 
 	std::string mRPCAppID;
+#endif
+#ifdef POP_FEATURE_STEAM_API
+	SteamAPI *mSteamAPI;
+
+	std::string mSteamAppID;
 #endif
 
 	std::string mBetaSupportSiteOverride;
@@ -54,6 +64,8 @@ class PopApp : public AppBase
 
 	virtual void URLOpenSucceeded(const std::string &theURL);
 
+	virtual void ShutdownHook();
+
   public:
 	PopApp();
 	virtual ~PopApp();
@@ -70,8 +82,11 @@ class PopApp : public AppBase
 
 	virtual void HandleCmdLineParam(const std::string &theParamName, const std::string &theParamValue);
 	virtual bool OpenHTMLTemplate(const std::string &theTemplateFile, const DefinesMap &theDefinesMap);
-#if POP_FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 	virtual void InitDiscordRPC();
+#endif
+#ifdef POP_FEATURE_STEAM_API
+	virtual void InitSteamAPI();
 #endif
 };
 

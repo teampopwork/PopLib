@@ -3,8 +3,6 @@
 
 #pragma once
 
-#ifdef POP_FEATURE_DISCORD_RPC
-
 #include <discord-rpc.hpp>
 
 namespace PopLib
@@ -35,7 +33,5 @@ class DiscordRPC
 };
 
 } // namespace PopLib
-
-#endif
 
 #endif

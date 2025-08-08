@@ -1,5 +1,4 @@
 #include "popapp.hpp"
-#include "api/discord.hpp"
 #include "math/mtrand.hpp"
 #include <SDL3/SDL.h>
 #include "debug/debug.hpp"
@@ -8,6 +7,12 @@
 #include <time.h>
 #include "readwrite/jsonparser.hpp"
 #include <filesystem>
+#ifdef POP_FEATURE_DISCORD_RPC
+#include "api/discord.hpp"
+#endif
+#ifdef POP_FEATURE_STEAM_API
+#include "api/steam.hpp"
+#endif
 
 namespace fs = std::filesystem;
 
@@ -54,6 +59,28 @@ PopApp::PopApp()
 	mRPCAppID = "1369297870456488057";
 	mDiscordRPC = nullptr;
 #endif
+
+#ifdef POP_FEATURE_STEAM_API
+    mSteamAPI = nullptr;
+
+    #if defined(_WIN32) || defined(_WIN64)
+        // Windows
+        #if defined(_DEBUG) || defined(DEBUG) || !defined(NDEBUG)
+            mSteamAppID = "480";
+        #else
+            mSteamAppID = "0";
+        #endif
+    #elif defined(__linux__)
+        // Linux
+        #if defined(_DEBUG) || defined(DEBUG) || !defined(NDEBUG)
+            mSteamAppID = "480";
+        #else
+            mSteamAppID = "0";
+        #endif
+    #else
+        mSteamAppID = "0";
+    #endif
+#endif
 }
 
 PopApp::~PopApp()
@@ -76,8 +103,11 @@ void PopApp::Init()
 
 void PopApp::InitHook()
 {
-#if POP_FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 	InitDiscordRPC();
+#endif
+#ifdef POP_FEATURE_STEAM_API
+	InitSteamAPI();
 #endif
 }
 
@@ -88,6 +118,11 @@ void PopApp::UpdateFrames()
 #ifdef POP_FEATURE_DISCORD_RPC
 	if (mDiscordRPC && mDiscordRPC->mHasInitialized)
 		mDiscordRPC->UpdateRPC();
+#endif
+
+#ifdef POP_FEATURE_STEAM_API
+    if (mSteamAPI)
+        mSteamAPI->RunCallbacks();
 #endif
 }
 
@@ -378,6 +413,18 @@ void PopApp::InitDiscordRPC()
 }
 #endif
 
+#ifdef POP_FEATURE_STEAM_API
+void PopApp::InitSteamAPI()
+{
+    if (mSteamAPI)
+        delete mSteamAPI;
+
+    mSteamAPI = new SteamAPI();
+    if (!mSteamAPI->Init(mSteamAppID))
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize Steam API with AppID: %s", mSteamAppID.c_str());
+}
+#endif
+
 void PopApp::HandleCmdLineParam(const std::string &theParamName, const std::string &theParamValue)
 {
 	if (theParamName == "-version")
@@ -397,6 +444,18 @@ void PopApp::HandleCmdLineParam(const std::string &theParamName, const std::stri
 void PopApp::OpenUpdateURL()
 {
 	Shutdown();
+}
+
+void PopApp::ShutdownHook()
+{
+#ifdef POP_FEATURE_STEAM_API
+    if (mSteamAPI)
+    {
+        mSteamAPI->Shutdown();
+        delete mSteamAPI;
+        mSteamAPI = nullptr;
+    }
+#endif
 }
 
 bool PopApp::OpenHTMLTemplate(const std::string &theTemplateFile, const DefinesMap &theDefinesMap)

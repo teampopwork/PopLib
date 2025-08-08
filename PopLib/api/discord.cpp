@@ -1,8 +1,7 @@
-#ifdef POP_FEATURE_DISCORD_RPC
-
+#define POPLIB_SKIP_INT64_TYPEDEF
 #include <SDL3/SDL.h>
 #include "discord.hpp"
-#include "../Debug/debug.hpp"
+#include "debug/debug.hpp"
 
 using namespace PopLib;
 
@@ -71,5 +70,3 @@ void DiscordRPC::UpdateRPC()
 		.setInstance(false)
 		.refresh();
 }
-
-#endif
