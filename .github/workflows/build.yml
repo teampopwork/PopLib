@@ -30,7 +30,7 @@ jobs:
 
       - name: Read VERSION
         id: extract
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat VERSION.pz)" >> $GITHUB_OUTPUT
 
   build:
     needs: version
