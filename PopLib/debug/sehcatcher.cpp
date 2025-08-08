@@ -19,6 +19,7 @@
 #include <dlfcn.h>
 #include <sstream>
 #include <sys/utsname.h>
+#include <unistd.h>
 #else
 #include <csignal>
 #include <execinfo.h>
@@ -1146,26 +1147,28 @@ std::string SEHCatcher::GetSysInfo()
 	char aPopLibStr[40];
 	char aOpenALStr[256];
 	char aBassStr[20];
+
 	if (mApp != NULL)
 	{
-		sprintf(aPopLibStr, "PopLib Ver: %s", POPLIB_VERSION);
-		aDebugDump += aPopLibStr;
-		aDebugDump += "\r\n";
-
-		sprintf(aSDLStr, "SDL Ver: %d.%d.%d", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
-		aDebugDump += aSDLStr;
-		aDebugDump += "\r\n";
-
-		const char *version = alGetString(AL_VERSION);
-		const char *renderer = alGetString(AL_RENDERER);
-		const char *vendor = alGetString(AL_VENDOR);
-		sprintf(aOpenALStr, "OpenAL Ver: %s \r\nOpenAL Renderer: %s \r\nOpenAL Vendor: %s", version, renderer, vendor);
-		aDebugDump += aOpenALStr;
-		aDebugDump += "\r\n";
-
-		sprintf(aBassStr, "Bass Ver: %s", BASSVERSIONTEXT);
-		aDebugDump += aBassStr;
-		aDebugDump += "\r\n";
+        snprintf(aPopLibStr, sizeof(aPopLibStr), "PopLib Ver: %s", POPLIB_VERSION);
+        aDebugDump += aPopLibStr;
+        aDebugDump += "\r\n";
+        
+        snprintf(aSDLStr, sizeof(aSDLStr), "SDL Ver: %d.%d.%d", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
+        aDebugDump += aSDLStr;
+        aDebugDump += "\r\n";
+        
+        const char *version = alGetString(AL_VERSION);
+        const char *renderer = alGetString(AL_RENDERER);
+        const char *vendor = alGetString(AL_VENDOR);
+        snprintf(aOpenALStr, sizeof(aOpenALStr), "OpenAL Ver: %s \r\nOpenAL Renderer: %s \r\nOpenAL Vendor: %s", 
+                version, renderer, vendor);
+        aDebugDump += aOpenALStr;
+        aDebugDump += "\r\n";
+        
+        snprintf(aBassStr, sizeof(aBassStr), "Bass Ver: %s", BASSVERSIONTEXT);
+        aDebugDump += aBassStr;
+        aDebugDump += "\r\n";
 	}
 
 	return aDebugDump;
