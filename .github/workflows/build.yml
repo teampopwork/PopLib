@@ -138,7 +138,7 @@ jobs:
       - name: Organize output
         run: |
           mkdir -p dist/examples dist/tools
-          cp VERSION dist/
+          cp VERSION.pz dist/
 
           if [[ -d examples/bin ]]; then
             cp -r examples/bin/. dist/examples/
