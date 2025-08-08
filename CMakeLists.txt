@@ -30,11 +30,11 @@ else ()
 endif()
 
 if(FEATURE_DISCORD_RPC)
-	add_compile_definitions(_FEATURE_DISCORD_RPC)
+	add_compile_definitions(POP_FEATURE_DISCORD_RPC)
 endif()
 
 if(CONSOLE AND WIN32)
-	add_compile_definitions(_CONSOLE_ON)
+	add_compile_definitions(POP_CONSOLE_ON)
 endif()
 
 if (IS_64BIT)

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 
 #include <discord-rpc.hpp>
 

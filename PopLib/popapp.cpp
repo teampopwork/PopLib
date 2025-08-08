@@ -50,7 +50,7 @@ PopApp::PopApp()
 	if (mBuildNum != 0)
 		mBuildDate = BUILD_INFO_MARKER + 8;
 
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 	mRPCAppID = "1369297870456488057";
 	mDiscordRPC = nullptr;
 #endif
@@ -58,7 +58,7 @@ PopApp::PopApp()
 
 PopApp::~PopApp()
 {
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 	if (mDiscordRPC)
 		delete mDiscordRPC;
 #endif
@@ -76,7 +76,7 @@ void PopApp::Init()
 
 void PopApp::InitHook()
 {
-#if _FEATURE_DISCORD_RPC
+#if POP_FEATURE_DISCORD_RPC
 	InitDiscordRPC();
 #endif
 }
@@ -85,7 +85,7 @@ void PopApp::UpdateFrames()
 {
 	AppBase::UpdateFrames();
 
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 	if (mDiscordRPC && mDiscordRPC->mHasInitialized)
 		mDiscordRPC->UpdateRPC();
 #endif
@@ -368,7 +368,7 @@ void PopApp::ReadFromRegistry()
 	mDontUpdate = GetBoolean("DontUpdate", mDontUpdate);
 }
 
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 void PopApp::InitDiscordRPC()
 {
 	if (mDiscordRPC)

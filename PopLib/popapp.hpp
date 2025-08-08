@@ -12,7 +12,7 @@ class DiscordRPC;
 class PopApp : public AppBase
 {
   public:
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 	DiscordRPC *mDiscordRPC;
 
 	std::string mRPCAppID;
@@ -70,7 +70,7 @@ class PopApp : public AppBase
 
 	virtual void HandleCmdLineParam(const std::string &theParamName, const std::string &theParamValue);
 	virtual bool OpenHTMLTemplate(const std::string &theTemplateFile, const DefinesMap &theDefinesMap);
-#if _FEATURE_DISCORD_RPC
+#if POP_FEATURE_DISCORD_RPC
 	virtual void InitDiscordRPC();
 #endif
 };

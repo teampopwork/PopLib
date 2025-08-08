@@ -1,4 +1,4 @@
-#ifdef _FEATURE_DISCORD_RPC
+#ifdef POP_FEATURE_DISCORD_RPC
 
 #include <SDL3/SDL.h>
 #include "discord.hpp"

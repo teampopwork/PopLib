@@ -16,7 +16,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "gameapp.hpp"
-#ifndef _CONSOLE_ON
+#ifndef POP_CONSOLE_ON
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -30,7 +30,7 @@ using namespace PopLib;
 
 int main(int argc, char *argv[])
 {
-#ifndef _CONSOLE_ON
+#ifndef POP_CONSOLE_ON
 #ifdef _WIN32
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif
