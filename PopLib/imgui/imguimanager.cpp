@@ -128,6 +128,13 @@ ImGuiManager::~ImGuiManager()
 			ImGui_ImplSDL3_Shutdown();
 			break;
 		}
+		default:
+		{
+			// in appbase.cpp we're using SDL as default, so do we here
+			ImGui_ImplSDLRenderer3_Shutdown();
+			ImGui_ImplSDL3_Shutdown();
+			break;
+		}
 	}
 
 	ImGui::DestroyContext();
