@@ -70,12 +70,12 @@ jobs:
             build_type: Debug
             generator: "Ninja"
           - os: macos-latest
-            arch: x64
+            arch: arm64
             cmake_arch: native
             build_type: Release
             generator: "Ninja"
           - os: macos-latest
-            arch: x64
+            arch: arm64
             cmake_arch: native
             build_type: Debug
             generator: "Ninja"
