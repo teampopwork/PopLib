@@ -83,6 +83,16 @@ jobs:
         with:
           cmakeVersion: latest
 
+      - name: Install Ninja
+        if: matrix.os != 'windows-2025'
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y ninja-build
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install ninja
+          fi
+
       - name: Install dependencies (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -100,11 +110,17 @@ jobs:
       - name: Configure
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -A ${{ matrix.cmake_arch }}
+            cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} \
+              -G "Visual Studio 17 2022" \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -A ${{ matrix.cmake_arch }} \
+              -DCMAKE_INSTALL_PREFIX=$PWD/dist/install
           else
-            cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+            cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} \
+              -G Ninja \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_INSTALL_PREFIX=$PWD/dist/install
           fi
-        shell: bash
 
       - name: Build
         run: cmake --build build_${{ matrix.arch }}_${{ matrix.build_type }} --config ${{ matrix.build_type }}
