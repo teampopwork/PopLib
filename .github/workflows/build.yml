@@ -115,7 +115,7 @@ jobs:
       - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          brew install freetype harfbuzz
+          brew install freetype harfbuzz openal-soft
         shell: bash
 
       - name: Configure

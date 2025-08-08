@@ -1,5 +1,9 @@
 #include "sehcatcher.hpp"
+#ifdef __APPLE__
+#include <OpenAL/al.h>
+#else
 #include <AL/al.h>
+#endif
 #include <bass.h>
 #include "SDL3/SDL_messagebox.h"
 #include "SDL3/SDL_video.h"

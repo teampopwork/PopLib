@@ -87,8 +87,6 @@ FetchContent_Declare(
 # the most hackiest hacks i've ever done
 if(APPLE)
     find_library(OPENAL_LIBRARY OpenAL REQUIRED)
-    find_path(OPENAL_INCLUDE_DIR AL/al.h 
-              PATHS /System/Library/Frameworks/OpenAL.framework/Headers)
     
     if(NOT OPENAL_LIBRARY)
         message(FATAL_ERROR "System OpenAL framework not found")
@@ -97,8 +95,9 @@ if(APPLE)
     add_library(OpenAL::OpenAL INTERFACE IMPORTED)
     set_target_properties(OpenAL::OpenAL PROPERTIES
         INTERFACE_LINK_LIBRARIES "${OPENAL_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${OPENAL_INCLUDE_DIR}"
     )
+    
+    message(STATUS "Using system OpenAL framework: ${OPENAL_LIBRARY}")
 else()
     FetchContent_Declare(
 		OpenAL
