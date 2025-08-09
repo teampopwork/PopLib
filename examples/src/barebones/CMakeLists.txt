@@ -21,7 +21,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 if (NOT WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
-        _DEBUG
+        $<$<CONFIG:Debug>:_DEBUG>
     )
 endif()
 
