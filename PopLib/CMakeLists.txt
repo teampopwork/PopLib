@@ -144,8 +144,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 	STB_IMAGE_IMPLEMENTATION
 	STBI_MSC_SECURE_CRT
 	STB_IMAGE_WRITE_IMPLEMENTATION
-	_DEBUG
 )
+
+if (NOT WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        _DEBUG
+    )
+endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     SDL3::SDL3-static
