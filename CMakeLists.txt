@@ -17,7 +17,7 @@ set(_Python3_EXECUTABLE_DEBUG "" CACHE FILEPATH "Python debug executable")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(FEATURE_DISCORD_RPC "Feature Discord RPC" OFF)
-option(FEATURE_STEAM_API "Feature Steam API" ON)
+option(FEATURE_STEAM_API "Feature Steam API" OFF)
 option(BUILD_EXAMPLES "Build Examples" ON)
 option(CONSOLE "Show the console on Windows" ON)
 option(BUILD_TOOLS "Build Tools" ON)
