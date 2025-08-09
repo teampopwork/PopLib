@@ -1004,7 +1004,7 @@ void SEHCatcher::ShowErrorDialog(const std::string &theErrorTitle, const std::st
 		float spacing = ImGui::GetStyle().ItemSpacing.x;
 
 		int numButtons = 1;
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef _DEBUG
 		numButtons += 1;
 #endif
 		numButtons += 1;
@@ -1027,7 +1027,7 @@ void SEHCatcher::ShowErrorDialog(const std::string &theErrorTitle, const std::st
 
 			mExiting = true;
 		}
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef _DEBUG
 		ImGui::SameLine();
 		if (ImGui::Button("Debug", ImVec2(buttonWidth, 0)))
 		{

@@ -63,20 +63,8 @@ PopApp::PopApp()
 #ifdef POP_FEATURE_STEAM_API
     mSteamAPI = nullptr;
 
-    #if defined(_WIN32) || defined(_WIN64)
-        // Windows
-        #if defined(_DEBUG) || defined(DEBUG) || !defined(NDEBUG)
-            mSteamAppID = "480";
-        #else
-            mSteamAppID = "0";
-        #endif
-    #elif defined(__linux__)
-        // Linux
-        #if defined(_DEBUG) || defined(DEBUG) || !defined(NDEBUG)
-            mSteamAppID = "480";
-        #else
-            mSteamAppID = "0";
-        #endif
+	#ifdef _DEBUG
+		mSteamAppID = "480";
     #else
         mSteamAppID = "0";
     #endif
