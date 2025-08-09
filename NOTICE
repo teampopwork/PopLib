@@ -40,10 +40,9 @@ PopLib includes the following third-party libraries:
     - License: MIT License
     - Source: https://github.com/ocornut/imgui
 
-10. BASS
-    - License: Proprietary, free for non-commercial use (see https://www.un4seen.com)
-    - Source: https://www.un4seen.com/bass.html
-    - Note: We plan to replace this with libopenmpt soon.
+10. libopenmpt
+    - License: BSD 2-Clause License
+    - Source: https://lib.openmpt.org/libopenmpt/
 
 ---
 

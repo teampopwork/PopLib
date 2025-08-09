@@ -119,8 +119,8 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${POPLIB_ROOT_DIR}/external/bass
         ${POPLIB_ROOT_DIR}/external/stb_image
+		${OPENMPT_INCLUDE_DIRS}
 )
 
 if (FEATURE_STEAM_API)
@@ -146,14 +146,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 	STB_IMAGE_WRITE_IMPLEMENTATION
 )
 
-if (WIN32)
-    set(BASS_LIB_PATH "${BASS_LIB_PATH}/bass.lib")
-elseif (APPLE)
-    set(BASS_LIB_PATH "${BASS_LIB_PATH}/libbass.dylib")
-elseif (UNIX)
-    set(BASS_LIB_PATH "${BASS_LIB_PATH}/libbass.so")
-endif()
-
 target_link_libraries(${PROJECT_NAME} PUBLIC
     SDL3::SDL3-static
     SDL3_ttf::SDL3_ttf
@@ -166,7 +158,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     zlibstatic
     glm
     misc
-    ${BASS_LIB_PATH}
+	${OPENMPT_LIBRARIES}
 )
 
 if (FEATURE_DISCORD_RPC)

@@ -2,7 +2,7 @@
 #include "board.hpp"
 #include "PopLib/widget/widgetmanager.hpp"
 #include "PopLib/common.hpp"
-#include "PopLib/audio/bassmusicinterface.hpp"
+#include "PopLib/audio/openmptmusicinterface.hpp"
 #include "PopLib/resources/resourcemanager.hpp"
 #include "res.hpp"
 
@@ -53,7 +53,7 @@ void GameApp::Init()
 	}
 
 	// load the music
-	mMusicInterface->LoadMusic(0, "music/tetris.ogg");
+	mMusicInterface->LoadMusic(0, "music/tetrisgb.it");
 	mMusicInterface->FadeIn(0, 0, 0.002, false);
 }
 

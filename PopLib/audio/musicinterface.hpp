@@ -8,6 +8,12 @@
 namespace PopLib
 {
 
+struct StreamData
+{
+    unsigned char *mStreamData = nullptr;
+    void *mStreamHandle = nullptr;
+};
+
 /**
  * @brief music interface
  *

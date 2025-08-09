@@ -25,8 +25,7 @@
 #include <fstream>
 #include "graphics/sysfont.hpp"
 #include "resources/resourcemanager.hpp"
-#include "audio/bassmusicinterface.hpp"
-#include <bass.h>
+#include "audio/openmptmusicinterface.hpp"
 #include "misc/autocrit.hpp"
 #include "debug/debug.hpp"
 #include "paklib/pakinterface.hpp"
@@ -321,8 +320,6 @@ AppBase::~AppBase()
 	delete mMusicInterface;
 	delete mSoundManager;
 	delete mIGUIManager;
-
-	BASS_Stop();
 
 	WaitForLoadingThread();
 
@@ -3272,7 +3269,7 @@ MusicInterface *AppBase::CreateMusicInterface()
 	if (mNoSoundNeeded)
 		return new MusicInterface;
 	else
-		return new BassMusicInterface();
+		return new OpenMPTMusicInterface();
 }
 
 void AppBase::InitPropertiesHook()

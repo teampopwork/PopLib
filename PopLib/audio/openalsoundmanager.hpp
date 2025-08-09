@@ -23,7 +23,7 @@ class OpenALSoundInstance;
 class OpenALSoundManager : public SoundManager
 {
 	friend class OpenALSoundInstance;
-	friend class BassMusicInterface;
+	friend class OpenMPTMusicInterface;
 
   public:
 	ALuint mSourceSounds[MAX_SOURCE_SOUNDS];

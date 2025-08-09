@@ -1,100 +1,71 @@
-#ifndef __BASSMUSICINTERFACE_HPP__
-#define __BASSMUSICINTERFACE_HPP__
+#ifndef __OPENMPTMUSICINTERFACE_HPP__
+#define __OPENMPTMUSICINTERFACE_HPP__
 
 #pragma once
 
 #include "musicinterface.hpp"
-#include "bass.h"
+#include "miniaudio.h"
+#include <map>
+#include <string>
+#include <mutex>
+#include <memory>
+#include <cstdint>
 
 namespace PopLib
 {
 
-class AppBase;
-
-struct StreamData
-{
-	/// @brief data that is streamed to mHStream
-	uchar *mStreamData;
-	/// @brief stream object
-	HSTREAM mHStream;
-};
-
 /**
- * @brief bass music info
- *
- * why is this not a struct?
+ * @brief openmpt music info
  */
-class BassMusicInfo
+struct OpenMPTMusicInfo
 {
-  public:
-	/// @brief music object
-	HMUSIC mHMusic;
-	/// @brief stream object
+	void *mHMusic;		 // libopenmpt module ptr if module
+	ma_decoder mDecoder; // miniaudio decoder for MP3/WAV/etc
+	bool mIsModule;		 // true = libopenmpt module, false = miniaudio decoder
+
 	StreamData mStream;
-	/// @brief current volume
 	double mVolume;
-	/// @brief TBA
 	double mVolumeAdd;
-	/// @brief TBA
 	double mVolumeCap;
-	/// @brief true if going to stop on fade
 	bool mStopOnFade;
 
-  public:
-	/// @brief constructor
-	BassMusicInfo();
-	/// @brief destructor
-	virtual ~BassMusicInfo() = default;
+	std::mutex mDecoderMutex; // protects mDecoder / seek / uninit / read
+	bool mLoop;
 
-	/// @brief gets the current handle
-	/// @return mHMusic if no mHStream and vice verse
-	uint32_t GetHandle()
-	{
-		return mHMusic ? mHMusic : mStream.mHStream;
-	}
+	OpenMPTMusicInfo();
 };
 
-/// @brief list
-typedef std::map<int, BassMusicInfo> BassMusicMap;
+/// @brief list (store pointers to avoid copying non-copyable members)
+typedef std::map<int, std::unique_ptr<OpenMPTMusicInfo>> OpenMPTMusicMap;
 
 /**
- * @brief bass music interface
- *
- * parents MusicInterface
+ * @brief OpenMPT music interface
  */
-class BassMusicInterface : public MusicInterface
+class OpenMPTMusicInterface : public MusicInterface
 {
   public:
 	/// @brief list
-	BassMusicMap mMusicMap;
-	/// @brief maximum music volume
+	OpenMPTMusicMap mMusicMap;
+	/// @brief maximum music volume (compat)
 	int mMaxMusicVolume;
-	/// @brief music loading flags
+	/// @brief music loading flags (compat)
 	int mMusicLoadFlags;
 
   public:
 	/// @brief constructor
-	BassMusicInterface();
+	OpenMPTMusicInterface();
 	/// @brief destructor
-	virtual ~BassMusicInterface();
+	virtual ~OpenMPTMusicInterface();
 
 	/// @brief loads music by id
-	/// @param theSongId
-	/// @param theFileName
-	/// @return true if success
 	virtual bool LoadMusic(int theSongId, const std::string &theFileName);
 	/// @brief plays music by id
-	/// @param theSongId
-	/// @param theOffset
-	/// @param noLoop
 	virtual void PlayMusic(int theSongId, int theOffset = 0, bool noLoop = false);
 	/// @brief stops music by id
-	/// @param theSongId
 	virtual void StopMusic(int theSongId);
 	/// @brief stops all music
 	virtual void StopAllMusic();
 	/// @brief unloads music by id
-	/// @param theSongId
 	virtual void UnloadMusic(int theSongId);
 	/// @brief unloads all music
 	virtual void UnloadAllMusic();
@@ -103,55 +74,52 @@ class BassMusicInterface : public MusicInterface
 	/// @brief resume all music
 	virtual void ResumeAllMusic();
 	/// @brief pauses music by id
-	/// @param theSongId
 	virtual void PauseMusic(int theSongId);
 	/// @brief resumes music by id
-	/// @param theSongId
 	virtual void ResumeMusic(int theSongId);
 	/// @brief fades in music by id
-	/// @param theSongId
-	/// @param theOffset
-	/// @param theSpeed
-	/// @param noLoop
 	virtual void FadeIn(int theSongId, int theOffset = -1, double theSpeed = 0.002, bool noLoop = false);
 	/// @brief fades out music by id
-	/// @param theSongId
-	/// @param stopSong
-	/// @param theSpeed
 	virtual void FadeOut(int theSongId, bool stopSong = true, double theSpeed = 0.004);
 	/// @brief fades out all music
-	/// @param stopSong
-	/// @param theSpeed
 	virtual void FadeOutAll(bool stopSong = true, double theSpeed = 0.004);
 	/// @brief sets song volume by id
-	/// @param theSongId
-	/// @param theVolume
 	virtual void SetSongVolume(int theSongId, double theVolume);
 	/// @brief sets song maximum volume by id
-	/// @param theSongId
-	/// @param theMaxVolume
 	virtual void SetSongMaxVolume(int theSongId, double theMaxVolume);
 	/// @brief is song by id playing?
-	/// @param theSongId
-	/// @return true if yes
 	virtual bool IsPlaying(int theSongId);
 
 	/// @brief sets global volume
-	/// @param theVolume
 	virtual void SetVolume(double theVolume);
-	/// @brief sets music amplify, default is 0.50
-	/// @param theSongId
-	/// @param theAmp
+	/// @brief sets music amplify
 	virtual void SetMusicAmplify(int theSongId, double theAmp);
-	/// @brief music update
+	/// @brief music update (call from main thread)
 	virtual void Update();
 
 	/// @brief functions for dealing with MODs
-	/// @param theSongId
-	/// @return music order
 	int GetMusicOrder(int theSongId);
+
+  public:
+	/// @brief start the miniaudio device
+	void StartDevice();
+	/// @brief stop the miniaudio device
+	void StopDevice();
+
+  private:
+	/// @brief callback invoked from miniaudio (defined in .cpp)
+	void dataCallback(float *outF32, ma_uint32 frameCount);
+
+	/// @brief miniaudio device object (header includes miniaudio.h so this is known)
+	ma_device mDevice;
+
+	/// @brief whether mDevice was successfully initialized
+	bool mDeviceInitialized;
+
+	/// @brief mutex protecting mMusicMap and other state
+	std::mutex mMutex;
 };
 
 } // namespace PopLib
 
-#endif
+#endif // __OPENMPTMUSICINTERFACE_HPP__

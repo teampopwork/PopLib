@@ -42,22 +42,6 @@ if(CONSOLE AND WIN32)
 	add_compile_definitions(POP_CONSOLE_ON)
 endif()
 
-if (IS_64BIT)
-    message (STATUS "Getting the x64 BASS path")
-	set(BASS_LIB_PATH ${POPLIB_ROOT_DIR}/external/bass/x64)
-else ()
-    message (STATUS "Getting the x86 BASS path")
-	set(BASS_LIB_PATH  ${POPLIB_ROOT_DIR}/external/bass/x86)
-endif()
-
-if (WIN32)
-    set(BASS_PATH "${BASS_LIB_PATH}/bass.dll" CACHE FILEPATH "Path to BASS .dll" FORCE)
-elseif (APPLE)
-    set(BASS_PATH "${BASS_LIB_PATH}/libbass.dylib" CACHE FILEPATH "Path to BASS .dylib" FORCE)
-elseif (UNIX)
-    set(BASS_PATH "${BASS_LIB_PATH}/libbass.so" CACHE FILEPATH "Path to BASS .so" FORCE)
-endif()
-
 if(FEATURE_STEAM_API)
     set(STEAM_SDK_DIR "${CMAKE_SOURCE_DIR}/private/steam/sdk" CACHE FILEPATH "Path to Steam API dir" FORCE)
 
@@ -90,17 +74,58 @@ set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(MINIAUDIO_NO_LIBVORBIS ON CACHE BOOL "Disable miniaudio_libvorbis" FORCE) 
 set(MINIAUDIO_NO_LIBOPUS ON CACHE BOOL "Disable miniaudio_libopus" FORCE) 
 
-# OpenAL
+#-- openal
 set(LIBTYPE "STATIC" CACHE BOOL "" FORCE)
 set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
+#-- end openal
 
-# curl
+#-- curl
 set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
 set(CURL_ZLIB OFF CACHE BOOL "Disable curl's use of system zlib" FORCE)
 set(HTTP_ONLY ON CACHE BOOL "" FORCE)
 set(CURL_USE_LIBPSL OFF CACHE BOOL "Use libpsl" FORCE)
 set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
 set(CURL_USE_MBEDTLS OFF CACHE BOOL "" FORCE)
+#-- end curl
+
+#-- libopenmpt
+if(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # x64
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64")
+            set(LIBOPENMPT_ARCH "amd64")
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+            set(LIBOPENMPT_ARCH "arm64")
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64EC")
+            set(LIBOPENMPT_ARCH "arm64ec")
+        else()
+            message(FATAL_ERROR "Unsupported Windows architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+        endif()
+    else()
+        set(LIBOPENMPT_ARCH "x86")
+    endif()
+
+    set(OPENMPT_LIB_DIR "${CMAKE_SOURCE_DIR}/external/libopenmpt/lib/${LIBOPENMPT_ARCH}")
+    set(OPENMPT_BIN_DIR "${CMAKE_SOURCE_DIR}/external/libopenmpt/bin/${LIBOPENMPT_ARCH}")
+
+    include_directories("${CMAKE_SOURCE_DIR}/external/libopenmpt/include")
+    link_directories("${OPENMPT_LIB_DIR}")
+
+    set(OPENMPT_LIB_NAME "libopenmpt")
+    set(OPENMPT_LIBRARIES "${OPENMPT_LIB_DIR}/${OPENMPT_LIB_NAME}.lib")
+
+    set(OPENMPT_FOUND TRUE)
+else()
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(OPENMPT libopenmpt)
+endif()
+
+if(NOT OPENMPT_FOUND)
+    message(FATAL_ERROR "libopenmpt not found")
+endif()
+
+message(STATUS "libopenmpt found: includes=${OPENMPT_INCLUDE_DIRS} libs=${OPENMPT_LIBRARIES}")
+#-- end libopenmpt
 
 FetchContent_Declare(
     SDL3

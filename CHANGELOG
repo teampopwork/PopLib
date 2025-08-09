@@ -26,8 +26,7 @@ Audio
 
 BASS related:
 =============
-* Upgraded BASS to 2.4
-* Gave access to all functions in the library.
+* Replaced BASS with libopenmpt
 
 ImageLib
 =============

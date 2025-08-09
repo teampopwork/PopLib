@@ -50,6 +50,11 @@ libsteam_api.dylib
 steam_api.dll
 steam_api64.dll
 steam_appid.txt
+examples/bin/libopenmpt.dll
+examples/bin/openmpt-mpg123.dll
+examples/bin/openmpt-ogg.dll
+examples/bin/openmpt-vorbis.dll
+examples/bin/openmpt-zlib.dll
 
 # tools
 PopPak.exe

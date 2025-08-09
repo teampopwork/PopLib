@@ -4,7 +4,6 @@
 #else
 #include <AL/al.h>
 #endif
-#include <bass.h>
 #include "SDL3/SDL_messagebox.h"
 #include "SDL3/SDL_video.h"
 #include "appbase.hpp"
@@ -1146,7 +1145,6 @@ std::string SEHCatcher::GetSysInfo()
 	char aSDLStr[20];
 	char aPopLibStr[40];
 	char aOpenALStr[256];
-	char aBassStr[20];
 
 	if (mApp != NULL)
 	{
@@ -1164,10 +1162,6 @@ std::string SEHCatcher::GetSysInfo()
         snprintf(aOpenALStr, sizeof(aOpenALStr), "OpenAL Ver: %s \r\nOpenAL Renderer: %s \r\nOpenAL Vendor: %s", 
                 version, renderer, vendor);
         aDebugDump += aOpenALStr;
-        aDebugDump += "\r\n";
-        
-        snprintf(aBassStr, sizeof(aBassStr), "Bass Ver: %s", BASSVERSIONTEXT);
-        aDebugDump += aBassStr;
         aDebugDump += "\r\n";
 	}
 
