@@ -28,6 +28,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${POPLIB_ROOT_DIR}/PopLib/ # common.hpp
 )
 
+if (NOT WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        _DEBUG
+    )
+endif()
+
 target_link_libraries(${PROJECT_NAME} PopLib)
 
 set_target_properties(${PROJECT_NAME}
