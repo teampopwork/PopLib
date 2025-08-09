@@ -154,6 +154,10 @@ jobs:
           fi
         shell: bash
 
+      - name: Remove install folder
+        run: rm -rf dist/install
+        shell: bash
+
       - name: Upload dist directory
         uses: actions/upload-artifact@v4
         with:
