@@ -118,6 +118,8 @@ if(WIN32)
 else()
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(OPENMPT libopenmpt)
+
+	link_directories(${OPENMPT_LIBRARY_DIRS})
 endif()
 
 if(NOT OPENMPT_FOUND)
