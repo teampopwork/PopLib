@@ -13,23 +13,23 @@
 
 using namespace PopLib;
 
-void DrawStringWithOutline(PopLib::Graphics* g, const std::string& text, int x, int y,
-                           const PopLib::Color& outlineColor, const PopLib::Color& fillColor)
+void DrawStringWithOutline(PopLib::Graphics *g, const std::string &text, int x, int y,
+						   const PopLib::Color &outlineColor, const PopLib::Color &fillColor)
 {
-    g->SetFont(FONT_DEFAULT);
+	g->SetFont(FONT_DEFAULT);
 
-    g->SetColor(outlineColor);
-    g->DrawString(text, x - 1, y);
-    g->DrawString(text, x + 1, y);
-    g->DrawString(text, x, y - 1);
-    g->DrawString(text, x, y + 1);
-    g->DrawString(text, x - 1, y - 1);
-    g->DrawString(text, x + 1, y - 1);
-    g->DrawString(text, x - 1, y + 1);
-    g->DrawString(text, x + 1, y + 1);
+	g->SetColor(outlineColor);
+	g->DrawString(text, x - 1, y);
+	g->DrawString(text, x + 1, y);
+	g->DrawString(text, x, y - 1);
+	g->DrawString(text, x, y + 1);
+	g->DrawString(text, x - 1, y - 1);
+	g->DrawString(text, x + 1, y - 1);
+	g->DrawString(text, x - 1, y + 1);
+	g->DrawString(text, x + 1, y + 1);
 
-    g->SetColor(fillColor);
-    g->DrawString(text, x, y);
+	g->SetColor(fillColor);
+	g->DrawString(text, x, y);
 }
 
 int Board::sShapes[7][4][4][4] = {
@@ -216,8 +216,12 @@ void Board::Update()
 	{
 		if (!CheckCollision(mPieceX, mPieceY + 1, mPieceRotation))
 		{
-			mPieceY++;
+			mDropSpeed = 2;
 		}
+	}
+	else // hacky way to get back
+	{
+		mDropSpeed = 30;
 	}
 
 	// rotation
@@ -270,7 +274,8 @@ void Board::Draw(Graphics *g)
 		{
 			// skip drawing bricks in the grid area
 			bool inGridArea = (x >= gridX && x < gridX + gridWidthPx && y >= gridY && y < gridY + gridHeightPx);
-			bool isUiArea = (x >= gridX + gridWidthPx + brickSize * 2 && x < gridX + gridWidthPx + brickSize * 12 && y >= gridY && y < gridY + gridHeightPx);
+			bool isUiArea = (x >= gridX + gridWidthPx + brickSize * 5 && x < gridX + gridWidthPx + brickSize * 12 &&
+							 y >= gridY && y < gridY + gridHeightPx);
 			if (!inGridArea && !isUiArea)
 			{
 				g->DrawImage(IMAGE_BRICK, x, y);
@@ -316,7 +321,7 @@ void Board::Draw(Graphics *g)
 		}
 	}
 
-	// Draw grid blocks on top of black background
+	// draw grid blocks
 	for (int r = 0; r < BoardHeight; r++)
 	{
 		for (int c = 0; c < BoardWidth; c++)
@@ -334,7 +339,7 @@ void Board::Draw(Graphics *g)
 		}
 	}
 
-	// Draw current piece
+	// draw current piece
 	for (int r = 0; r < 4; r++)
 	{
 		for (int c = 0; c < 4; c++)
@@ -355,9 +360,9 @@ void Board::Draw(Graphics *g)
 	{
 		for (int c = 0; c < 4; c++)
 		{
-			if (sShapes[mNextType][0][r][c]) // Always show rotation 0
+			if (sShapes[mNextType][0][r][c]) // always show rotation 0
 			{
-				int x = 600 + c * brickSize;
+				int x = 625 + c * brickSize;
 				int y = 200 + r * brickSize;
 				g->SetColor(blockColors[mNextType]);
 				g->SetColorizeImages(true);
@@ -368,16 +373,17 @@ void Board::Draw(Graphics *g)
 	}
 
 	// draw text
-	DrawStringWithOutline(g, "Score: " + std::to_string(mScore), 600, 80, Color(0, 0, 0), Color(255, 255, 255));
-	DrawStringWithOutline(g, "Level: " + std::to_string(mLevel), 600, 100, Color(0, 0, 0), Color(255, 255, 255));
-	DrawStringWithOutline(g, "Lines: " + std::to_string(mLinesCleared), 600, 120, Color(0, 0, 0), Color(255, 255, 255));
-	DrawStringWithOutline(g, "Next piece:", 600, 140, Color(0, 0, 0), Color(255, 255, 255));
+	DrawStringWithOutline(g, "Score: " + std::to_string(mScore), 625, 80, Color(0, 0, 0), Color(255, 255, 255));
+	DrawStringWithOutline(g, "Level: " + std::to_string(mLevel), 625, 100, Color(0, 0, 0), Color(255, 255, 255));
+	DrawStringWithOutline(g, "Lines: " + std::to_string(mLinesCleared), 625, 120, Color(0, 0, 0), Color(255, 255, 255));
+	DrawStringWithOutline(g, "Next piece:", 625, 140, Color(0, 0, 0), Color(255, 255, 255));
 
 	g->SetColor(Color(255, 255, 255));
 #ifdef _DEBUG
 	g->SetColor(Color(0, 0, 0, 140));
 	std::string watermark = StrFormat("Made using PopLib v%s", POPLIB_VERSION);
-	g->FillRect(Rect(0, (mY + mHeight) - FONT_DEFAULT->mHeight - 4, FONT_DEFAULT->StringWidth(watermark) + 8, FONT_DEFAULT->mHeight));
+	g->FillRect(Rect(0, (mY + mHeight) - FONT_DEFAULT->mHeight - 4, FONT_DEFAULT->StringWidth(watermark) + 8,
+					 FONT_DEFAULT->mHeight));
 	g->SetColor(Color(255, 255, 255));
 	g->DrawString(watermark, 4, (mY + mHeight) - (FONT_DEFAULT->mHeight - 12));
 #endif
