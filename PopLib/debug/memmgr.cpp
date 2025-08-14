@@ -1,5 +1,3 @@
-#include "./debug.hpp"
-
 #include "misc/autocrit.hpp"
 #include "misc/critsect.hpp"
 
@@ -9,7 +7,6 @@
 
 #include "memmgr.hpp"
 
-bool gInAssert = false;
 bool gDumpLeakedMem = false;
 
 static FILE *gTraceFile = nullptr;
@@ -47,65 +44,6 @@ class AllocMap : public std::map<void *, ALLOC_INFO>
 	}
 };
 static AllocMap gAllocMap;
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void Trace(const char *theStr)
-{
-	if (gTraceFile == nullptr)
-	{
-		gTraceFileNum = (gTraceFileNum + 1) % 2;
-		char aBuf[50];
-		sprintf(aBuf, "trace%d.txt", gTraceFileNum + 1);
-		gTraceFile = fopen(aBuf, "w");
-		if (gTraceFile == nullptr)
-			return;
-	}
-
-	fprintf(gTraceFile, "%s\n", theStr);
-	fflush(gTraceFile);
-
-	gTraceFileLen += strlen(theStr);
-	if (gTraceFileLen > 100000)
-	{
-		fclose(gTraceFile);
-		gTraceFile = nullptr;
-		gTraceFileLen = 0;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-void TraceFmt(const PopChar *fmt, ...)
-{
-	// Does not append a newline by default, also takes vararg parameters
-
-	va_list argList;
-	va_start(argList, fmt);
-	std::string result = vformat(fmt, argList);
-	va_end(argList);
-
-	if (gTraceFile == nullptr)
-	{
-		gTraceFileNum = (gTraceFileNum + 1) % 2;
-		char aBuf[50];
-		sprintf(aBuf, "trace%d.txt", gTraceFileNum + 1);
-		gTraceFile = fopen(aBuf, "w");
-		if (gTraceFile == nullptr)
-			return;
-	}
-
-	fprintf(gTraceFile, "%s", result.c_str());
-	fflush(gTraceFile);
-
-	gTraceFileLen += result.length();
-	if (gTraceFileLen > 100000)
-	{
-		fclose(gTraceFile);
-		gTraceFile = nullptr;
-		gTraceFileLen = 0;
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -233,14 +171,4 @@ void DumpUnfreed()
 	fprintf(f, "%s", buf);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void OutputDebug(const PopChar *fmt, ...)
-{
-	va_list argList;
-	va_start(argList, fmt);
-	std::string result = vformat(fmt, argList);
-	va_end(argList);
 
-	SDL_Log("%s", result.c_str());
-}

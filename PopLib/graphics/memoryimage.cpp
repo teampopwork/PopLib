@@ -3,7 +3,7 @@
 #include "appbase.hpp"
 #include "graphics.hpp"
 #include "renderer.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include "quantize.hpp"
 #include "debug/perftimer.hpp"
 #include "SWTri/SWTri.hpp"

@@ -7,6 +7,7 @@
 #include "appbase.hpp"
 #include "misc/autocrit.hpp"
 #include "misc/critsect.hpp"
+#include "debug/log.hpp"
 #include "imgui/imguimanager.hpp"
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -375,12 +376,12 @@ void SDLTextureData::CreateTextures(SDLImage *theImage)
 			}
 			else
 			{
-				SDL_Log("Error: Image bits are nullptr, cannot update texture.");
+				LOG_ERROR("Error: Image bits are nullptr, cannot update texture.");
 			}
 		}
 		else
 		{
-			SDL_Log("Failed to create texture: %s", SDL_GetError());
+			LOG_ERROR("Failed to create texture: %s", SDL_GetError());
 		}
 	}
 	else if (mBitsChangedCount != theImage->mBitsChangedCount)
@@ -392,7 +393,7 @@ void SDLTextureData::CreateTextures(SDLImage *theImage)
 		}
 		else
 		{
-			SDL_Log("Error: Image bits are nullptr, cannot update texture.");
+			LOG_ERROR("Error: Image bits are nullptr, cannot update texture.");
 		}
 	}
 

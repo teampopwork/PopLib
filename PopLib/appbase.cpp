@@ -27,7 +27,7 @@
 #include "resources/resourcemanager.hpp"
 #include "audio/openmptmusicinterface.hpp"
 #include "misc/autocrit.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include "paklib/pakinterface.hpp"
 #include "imgui/imguimanager.hpp"
 
@@ -311,7 +311,7 @@ AppBase::~AppBase()
 	while (aSharedImageItr != mSharedImageMap.end())
 	{
 		SharedImage *aSharedImage = &aSharedImageItr->second;
-		DBG_ASSERTE(aSharedImage->mRefCount == 0);
+		ASSERT(aSharedImage->mRefCount == 0);
 		delete aSharedImage->mImage;
 		mSharedImageMap.erase(aSharedImageItr++);
 	}
@@ -910,7 +910,7 @@ bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType,
 	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path config = GetAppDataFolder() + mRegKey + "/registry.json"; // always registry.json
 	std::filesystem::create_directories(config.parent_path());
-	// SDL_Log("%s", config.string().c_str());
+	// LOG_INFO("%s", config.string().c_str());
 
 	nlohmann::json j;
 	std::ifstream inFile(config);
@@ -2316,7 +2316,7 @@ int AppBase::LoadingThreadProcStub(void *theArg)
 
 	char aStr[256];
 	sprintf(aStr, "Resource Loading Time: %lu\n", (SDL_GetTicks() - aPopLibApp->mTimeLoaded));
-	SDL_Log("%s", aStr);
+	LOG_INFO("%s", aStr);
 
 	aPopLibApp->mLoadingThreadCompleted = true;
 
@@ -2622,7 +2622,7 @@ bool AppBase::Process(bool allowSleep)
 
 				++mNonDrawCount;
 				bool hasRealUpdate = DoUpdateFrames();
-				DBG_ASSERTE(hasRealUpdate);
+				ASSERT(hasRealUpdate);
 
 				if (!hasRealUpdate)
 					break;
@@ -2708,7 +2708,7 @@ bool AppBase::Process(bool allowSleep)
 	if (theModalDialogId != -1)
 	{
 		aDialog = GetDialog(theModalDialogId);
-		DBG_ASSERTE(aDialog != nullptr);
+		ASSERT(aDialog != nullptr);
 		if (aDialog == nullptr)
 			return;
 	}
@@ -2868,16 +2868,16 @@ void AppBase::Start()
 
 	WaitForLoadingThread();
 
-	SDL_Log("Seconds       = %g\r\n", (SDL_GetTicks() - aStartTime) / 1000.0);
+	LOG_INFO("Seconds       = %g\r\n", (SDL_GetTicks() - aStartTime) / 1000.0);
 	// sprintf(aString, "Count         = %d\r\n", aCount);
 	// OutputDebugString(aString);
-	SDL_Log("Sleep Count   = %d\r\n", mSleepCount);
-	SDL_Log("Update Count  = %d\r\n", mUpdateCount);
-	SDL_Log("Draw Count    = %d\r\n", mDrawCount);
-	SDL_Log("Screen Blt    = %d\r\n", mScreenBltTime);
+	LOG_INFO("Sleep Count   = %d\r\n", mSleepCount);
+	LOG_INFO("Update Count  = %d\r\n", mUpdateCount);
+	LOG_INFO("Draw Count    = %d\r\n", mDrawCount);
+	LOG_INFO("Screen Blt    = %d\r\n", mScreenBltTime);
 	if (mDrawTime + mScreenBltTime > 0)
 	{
-		SDL_Log("Avg FPS       = %d\r\n", (mDrawCount * 1000) / (mDrawTime + mScreenBltTime));
+		LOG_INFO("Avg FPS       = %d\r\n", (mDrawCount * 1000) / (mDrawTime + mScreenBltTime));
 	}
 
 	PreTerminate();
@@ -2947,7 +2947,7 @@ void AppBase::ShowResourceError(bool doExit)
 bool AppBase::GetBoolean(const std::string &theId)
 {
 	StringBoolMap::iterator anItr = mBoolProperties.find(theId);
-	DBG_ASSERTE(anItr != mBoolProperties.end());
+	ASSERT(anItr != mBoolProperties.end());
 
 	if (anItr != mBoolProperties.end())
 		return anItr->second;
@@ -2968,7 +2968,7 @@ bool AppBase::GetBoolean(const std::string &theId, bool theDefault)
 int AppBase::GetInteger(const std::string &theId)
 {
 	StringIntMap::iterator anItr = mIntProperties.find(theId);
-	DBG_ASSERTE(anItr != mIntProperties.end());
+	ASSERT(anItr != mIntProperties.end());
 
 	if (anItr != mIntProperties.end())
 		return anItr->second;
@@ -2989,7 +2989,7 @@ int AppBase::GetInteger(const std::string &theId, int theDefault)
 double AppBase::GetDouble(const std::string &theId)
 {
 	StringDoubleMap::iterator anItr = mDoubleProperties.find(theId);
-	DBG_ASSERTE(anItr != mDoubleProperties.end());
+	ASSERT(anItr != mDoubleProperties.end());
 
 	if (anItr != mDoubleProperties.end())
 		return anItr->second;
@@ -3010,7 +3010,7 @@ double AppBase::GetDouble(const std::string &theId, double theDefault)
 PopString AppBase::GetString(const std::string &theId)
 {
 	StringStringMap::iterator anItr = mStringProperties.find(theId);
-	DBG_ASSERTE(anItr != mStringProperties.end());
+	ASSERT(anItr != mStringProperties.end());
 
 	if (anItr != mStringProperties.end())
 		return anItr->second;
@@ -3031,7 +3031,7 @@ PopString AppBase::GetString(const std::string &theId, const PopString &theDefau
 StringVector AppBase::GetStringVector(const std::string &theId)
 {
 	StringStringVectorMap::iterator anItr = mStringVectorProperties.find(theId);
-	DBG_ASSERTE(anItr != mStringVectorProperties.end());
+	ASSERT(anItr != mStringVectorProperties.end());
 
 	if (anItr != mStringVectorProperties.end())
 		return anItr->second;
@@ -3399,14 +3399,14 @@ void AppBase::SetTaskBarIcon(const std::string &theFileName)
 	unsigned char *data = stbi_load(theFileName.c_str(), &width, &height, &channels, 4);
 	if (!data)
 	{
-		SDL_Log("failed to load image: %s\n", stbi_failure_reason());
+		LOG_ERROR("failed to load image: %s\n", stbi_failure_reason());
 		return;
 	}
 
 	SDL_Surface *surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4);
 	if (!surface)
 	{
-		SDL_Log("no surface?\n");
+		LOG_ERROR("no surface?\n");
 		stbi_image_free(data);
 		return;
 	}
@@ -3447,14 +3447,14 @@ PopLib::GPUImage *AppBase::CreateCrossfadeImage(PopLib::Image *theImage1, const 
 	if ((theRect1.mX < 0) || (theRect1.mY < 0) || (theRect1.mX + theRect1.mWidth > theImage1->GetWidth()) ||
 		(theRect1.mY + theRect1.mHeight > theImage1->GetHeight()))
 	{
-		DBG_ASSERTE("Crossfade Rect1 out of bounds");
+		ASSERT("Crossfade Rect1 out of bounds");
 		return nullptr;
 	}
 
 	if ((theRect2.mX < 0) || (theRect2.mY < 0) || (theRect2.mX + theRect2.mWidth > theImage2->GetWidth()) ||
 		(theRect2.mY + theRect2.mHeight > theImage2->GetHeight()))
 	{
-		DBG_ASSERTE("Crossfade Rect2 out of bounds");
+		ASSERT("Crossfade Rect2 out of bounds");
 		return nullptr;
 	}
 

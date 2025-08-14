@@ -1,7 +1,7 @@
 #include "widgetcontainer.hpp"
 #include "widgetmanager.hpp"
 #include "widget.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include <algorithm>
 
 using namespace PopLib;

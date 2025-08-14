@@ -1,5 +1,5 @@
 #include "xmlparser.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include "paklib/pakinterface.hpp"
 
 using namespace PopLib;
@@ -124,7 +124,7 @@ bool XMLParser::GetUTF8Char(wchar_t *theChar, bool *error)
 			aTempChar &= ~aMaskData[aLen];
 			int aTotalLen = aLen + 1;
 
-			DBG_ASSERTE(aTotalLen >= 2 && aTotalLen <= 6);
+			ASSERT(aTotalLen >= 2 && aTotalLen <= 6);
 
 			int anExtraChar = 0;
 			while (aLen > 0)

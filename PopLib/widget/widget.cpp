@@ -4,7 +4,7 @@
 #include "graphics/font.hpp"
 #include "graphics/image.hpp"
 #include "appbase.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include <cmath>
 
 using namespace PopLib;

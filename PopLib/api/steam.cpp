@@ -1,4 +1,5 @@
 #include "steam.hpp"
+#include "debug/log.hpp"
 #include <SDL3/SDL.h>
 #include <fstream>
 
@@ -17,18 +18,18 @@ bool SteamAPI::Init(const std::string &appId)
 {
 	if (!appId.empty())
 	{
-		SDL_Log("SteamAPI: Writing appid.txt with App ID %s", appId.c_str());
+		LOG_INFO("SteamAPI: Writing appid.txt with App ID %s", appId.c_str());
 
 		std::ofstream appidFile("steam_appid.txt", std::ios::out | std::ios::trunc);
 		if (appidFile.is_open())
 		{
 			appidFile << appId;
 			appidFile.close();
-			SDL_Log("SteamAPI: steam_appid.txt written successfully.");
+			LOG_INFO("SteamAPI: steam_appid.txt written successfully.");
 		}
 		else
 		{
-			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SteamAPI: Failed to write steam_appid.txt");
+			LOG_ERROR("SteamAPI: Failed to write steam_appid.txt");
 			return false;
 		}
 	}
@@ -36,11 +37,11 @@ bool SteamAPI::Init(const std::string &appId)
 	mInitialized = SteamAPI_Init();
 	if (!mInitialized)
 	{
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SteamAPI: Initialization failed");
+		LOG_INFO("SteamAPI: Initialization failed");
 		return false;
 	}
 
-	SDL_Log("SteamAPI: Initialized successfully. User: %s", GetPersonaName().c_str());
+	LOG_INFO("SteamAPI: Initialized successfully. User: %s", GetPersonaName().c_str());
 	return true;
 }
 
@@ -49,7 +50,7 @@ void SteamAPI::Shutdown()
 	if (mInitialized)
 	{
 		SteamAPI_Shutdown();
-		SDL_Log("SteamAPI: Shutdown complete");
+		LOG_INFO("SteamAPI: Shutdown complete");
 		mInitialized = false;
 	}
 }

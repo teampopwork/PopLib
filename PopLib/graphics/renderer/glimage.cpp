@@ -1,6 +1,6 @@
 #include "glimage.hpp"
 #include "misc/critsect.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include "glrenderer.hpp"
 #include "appbase.hpp"
 #include "../image.hpp"

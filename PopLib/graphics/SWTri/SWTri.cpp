@@ -1,7 +1,7 @@
 #pragma warning(disable : 4244 4305 4309)
 
 #include "SWTri.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 
 using namespace PopLib;
 
@@ -690,7 +690,7 @@ void SWHelper::SWDrawTriangle(bool textured, bool talpha, bool mod_argb, bool gl
 	DrawTriFunc aFunc = gDrawTriFunc[aType];
 	if (!aFunc)
 	{
-		DBG_ASSERT("You need to call SWTri_AddDrawTriFunc or SWTri_AddAllDrawTriFuncs" == nullptr);
+		ASSERT_MSG(false, "You need to call SWTri_AddDrawTriFunc or SWTri_AddAllDrawTriFuncs");
 	}
 	else
 		aFunc(pVerts, pFrameBuffer, bytepitch, textureInfo, globalDiffuse);

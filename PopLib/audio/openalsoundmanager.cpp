@@ -2,6 +2,7 @@
 #include "openalsoundinstance.hpp"
 #include "paklib/pakinterface.hpp"
 #include "aureader.hpp"
+#include "debug/log.hpp"
 
 // Vorbis
 #include "vorbis/codec.h"
@@ -38,7 +39,7 @@ OpenALSoundManager::OpenALSoundManager()
 	mALDevice = alcOpenDevice(NULL); // Default device
 	if (!mALDevice)
 	{
-		SDL_Log("Failed to open OpenAL device!\n");
+		LOG_ERROR("Failed to open OpenAL device!\n");
 		return;
 	}
 
@@ -47,7 +48,7 @@ OpenALSoundManager::OpenALSoundManager()
 	mALContext = alcCreateContext(mALDevice, NULL);
 	if (!mALContext)
 	{
-		SDL_Log("Failed to create OpenAL context!\n");
+		LOG_ERROR("Failed to create OpenAL context!\n");
 		alcCloseDevice(mALDevice);
 		return;
 	}

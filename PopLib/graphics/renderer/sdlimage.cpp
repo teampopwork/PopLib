@@ -1,6 +1,6 @@
 #include "sdlimage.hpp"
 #include "misc/critsect.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include "sdlrenderer.hpp"
 #include "appbase.hpp"
 #include "../image.hpp"

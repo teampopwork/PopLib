@@ -5,7 +5,7 @@
 #include "graphics/gpuimage.hpp"
 #include "appbase.hpp"
 #include "debug/perftimer.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 
 using namespace PopLib;
 using namespace std;

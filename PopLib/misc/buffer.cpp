@@ -1,5 +1,5 @@
 #include "buffer.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 
 #define POLYNOMIAL 0x04c11db7L
 

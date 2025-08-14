@@ -1,6 +1,6 @@
 #include "common.hpp"
 #include "math/mtrand.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -8,7 +8,7 @@
 #include <cstdarg>
 #include <wchar.h>
 
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 
 bool PopLib::gDebug = false;
 static PopLib::MTRand gMTRand;
@@ -164,7 +164,7 @@ std::string PopLib::WStringToString(const std::wstring &theString)
 	}
 	else
 	{
-		DBG_ASSERTE(aRequiredLength != (size_t)-1);
+		ASSERT(aRequiredLength != (size_t)-1);
 		if (aRequiredLength == (size_t)-1)
 			return "";
 

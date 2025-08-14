@@ -1,7 +1,7 @@
 #define POPLIB_SKIP_INT64_TYPEDEF
 #include <SDL3/SDL.h>
 #include "discord.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 
 using namespace PopLib;
 
@@ -25,21 +25,21 @@ bool DiscordRPC::InitRPC()
 	discord::RPCManager::get()
 		.setClientID(mAppID)
 		.onReady([](discord::User const &user) {
-			SDL_Log("Discord: connected to user %s#%s - %s", user.username.c_str(), user.discriminator.c_str(),
+			LOG_INFO("Discord: connected to user %s#%s - %s", user.username.c_str(), user.discriminator.c_str(),
 					user.id.c_str());
 		})
 		.onDisconnected([](int errcode, std::string_view message) {
-			SDL_Log("Discord: disconnected with error code %i - %s", errcode, std::string(message));
+			LOG_INFO("Discord: disconnected with error code %i - %s", errcode, std::string(message));
 		})
 		.onErrored([](int errcode, std::string_view message) {
-			SDL_Log("Discord: error with code %i - %s", errcode, std::string(message));
+			LOG_INFO("Discord: error with code %i - %s", errcode, std::string(message));
 		})
-		.onJoinGame([](std::string_view joinSecret) { SDL_Log("Discord: join game - %s", std::string(joinSecret)); })
+		.onJoinGame([](std::string_view joinSecret) { LOG_INFO("Discord: join game - %s", std::string(joinSecret)); })
 		.onSpectateGame([](std::string_view spectateSecret) {
-			SDL_Log("Discord: spectate game - %s", std::string(spectateSecret));
+			LOG_INFO("Discord: spectate game - %s", std::string(spectateSecret));
 		})
 		.onJoinRequest([](discord::User const &user) {
-			SDL_Log("Discord: join request from %s#%s - %s", user.username.c_str(), user.discriminator.c_str(),
+			LOG_INFO("Discord: join request from %s#%s - %s", user.username.c_str(), user.discriminator.c_str(),
 					user.id.c_str());
 		});
 	discord::RPCManager::get().initialize();

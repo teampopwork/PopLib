@@ -4,6 +4,7 @@
 #include "graphics/graphics.hpp"
 #include "misc/autocrit.hpp"
 #include <glm/gtc/matrix_transform.hpp>
+#include "debug/log.hpp"
 
 using namespace PopLib;
 
@@ -462,7 +463,7 @@ void GLTextureData::CreateTextures(GLImage *theImage)
 		}
 		else
 		{
-			SDL_Log("Error: Image bits are nullptr, cannot update texture.");
+			LOG_ERROR("Error: Image bits are nullptr, cannot update texture.");
 		}
 	}
 

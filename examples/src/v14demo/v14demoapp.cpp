@@ -7,6 +7,7 @@
 #include "board.hpp"
 #include "res.hpp"
 #include "PopLib/misc/httptransfer.hpp"
+#include "PopLib/debug/log.hpp"
 
 using namespace PopLib;
 
@@ -108,9 +109,9 @@ void V14DemoApp::InitHook()
 	std::string testURL = "http://httpbin.org/get";
 	transfer.Get(testURL);
 
-	SDL_Log("GET result: %d", transfer.GetResultCode());
-	SDL_Log("GET content length: %zu", transfer.GetContent().size());
-	SDL_Log("GET content:\n%s", transfer.GetContent().c_str());
+	LOG_INFO("GET result: %d", transfer.GetResultCode());
+	LOG_INFO("GET content length: %zu", transfer.GetContent().size());
+	LOG_INFO("GET content:\n%s", transfer.GetContent().c_str());
 #endif
 
 	// H521

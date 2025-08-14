@@ -108,6 +108,12 @@ typedef PopString::value_type PopChar;
 
 #define POPLIB_VERSION STR_MACRO(POPLIB_VERSION_MAJOR) "." STR_MACRO(POPLIB_VERSION_MINOR) "." STR_MACRO(POPLIB_VERSION_PATCH) "-" STR_MACRO(POPLIB_VERSION_STAGE)
 
+#ifdef _DEBUG
+#define LOGGING_ENABLED
+#define ASSERT_ENABLED
+#endif
+
+
 /**
  * @namespace PopLib
  * @brief root namespace for all PopLib classes

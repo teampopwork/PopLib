@@ -1,7 +1,7 @@
 #include "popapp.hpp"
 #include "math/mtrand.hpp"
 #include <SDL3/SDL.h>
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include <fstream>
 #include "common.hpp"
 #include <time.h>
@@ -409,7 +409,7 @@ void PopApp::InitSteamAPI()
 
     mSteamAPI = new SteamAPI();
     if (!mSteamAPI->Init(mSteamAppID))
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize Steam API with AppID: %s", mSteamAppID.c_str());
+        LOG_ERROR("Failed to initialize Steam API with AppID: %s", mSteamAppID.c_str());
 }
 #endif
 

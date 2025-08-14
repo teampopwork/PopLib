@@ -1,5 +1,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "openmptmusicinterface.hpp"
+#include "debug/log.hpp"
 
 #include <libopenmpt/libopenmpt.h>
 #include <cstdio>
@@ -66,7 +67,7 @@ OpenMPTMusicInterface::OpenMPTMusicInterface()
 
 	if (ma_device_init(NULL, &config, &mDevice) != MA_SUCCESS)
 	{
-		SDL_Log("OpenMPTMusicInterface: ma_device_init failed\n");
+		LOG_ERROR("OpenMPTMusicInterface: ma_device_init failed\n");
 		mDeviceInitialized = false;
 	}
 	else
@@ -135,7 +136,7 @@ bool OpenMPTMusicInterface::LoadMusic(int theSongId, const std::string &theFileN
 		std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 	}
 
-	SDL_Log("OpenMPTMusicInterface: Loading file with extension: %s\n", ext.c_str());
+	LOG_INFO("OpenMPTMusicInterface: Loading file with extension: %s\n", ext.c_str());
 
 	std::ifstream file(theFileName, std::ios::binary | std::ios::ate);
 	if (!file)
@@ -158,14 +159,14 @@ bool OpenMPTMusicInterface::LoadMusic(int theSongId, const std::string &theFileN
 
 	if (ext == "wav" || ext == "ogg" || ext == "mp3" || ext == "flac")
 	{
-		SDL_Log("OpenMPTMusicInterface: Using miniaudio decoder\n");
+		LOG_INFO("OpenMPTMusicInterface: Using miniaudio decoder\n");
 
 		ma_decoder_config cfg = ma_decoder_config_init_default();
 		ma_result result = ma_decoder_init_memory(data, size, &cfg, &musicInfo->mDecoder);
 
 		if (result != MA_SUCCESS)
 		{
-			SDL_Log("OpenMPTMusicInterface: Default decoder init failed: %d, trying with specific format\n", result);
+			LOG_ERROR("OpenMPTMusicInterface: Default decoder init failed: %d, trying with specific format\n", result);
 
 			ma_uint32 sampleRate = mDeviceInitialized ? mDevice.sampleRate : 44100;
 			cfg = ma_decoder_config_init(ma_format_f32, 2, sampleRate);
@@ -173,19 +174,19 @@ bool OpenMPTMusicInterface::LoadMusic(int theSongId, const std::string &theFileN
 
 			if (result != MA_SUCCESS)
 			{
-				SDL_Log("OpenMPTMusicInterface: Both decoder configs failed: %d for file: %s\n", result,
+				LOG_ERROR("OpenMPTMusicInterface: Both decoder configs failed: %d for file: %s\n", result,
 						theFileName.c_str());
 				delete[] data;
 				return false;
 			}
 		}
 
-		SDL_Log("OpenMPTMusicInterface: Decoder initialized successfully\n");
+		LOG_INFO("OpenMPTMusicInterface: Decoder initialized successfully\n");
 		musicInfo->mIsModule = false;
 	}
 	else
 	{
-		SDL_Log("OpenMPTMusicInterface: Using OpenMPT\n");
+		LOG_INFO("OpenMPTMusicInterface: Using OpenMPT\n");
 
 		int err = OPENMPT_ERROR_OK;
 		openmpt_module *mod =
@@ -193,7 +194,7 @@ bool OpenMPTMusicInterface::LoadMusic(int theSongId, const std::string &theFileN
 
 		if (!mod || err != OPENMPT_ERROR_OK)
 		{
-			SDL_Log("OpenMPTMusicInterface: OpenMPT failed to load module: error %d\n", err);
+			LOG_ERROR("OpenMPTMusicInterface: OpenMPT failed to load module: error %d\n", err);
 			delete[] data;
 			return false;
 		}
@@ -210,7 +211,7 @@ bool OpenMPTMusicInterface::LoadMusic(int theSongId, const std::string &theFileN
 
 	std::lock_guard<std::mutex> lock(mMutex);
 	mMusicMap[theSongId] = std::move(musicInfo);
-	SDL_Log("OpenMPTMusicInterface: Music loaded successfully with ID: %d\n", theSongId);
+	LOG_INFO("OpenMPTMusicInterface: Music loaded successfully with ID: %d\n", theSongId);
 	return true;
 }
 
@@ -258,7 +259,7 @@ void OpenMPTMusicInterface::PlayMusic(int theSongId, int theOffset, bool noLoop)
 			ma_result result = ma_decoder_seek_to_pcm_frame(&info->mDecoder, frame);
 			if (result != MA_SUCCESS)
 			{
-				SDL_Log("OpenMPTMusicInterface: Failed to seek to frame %llu\n", frame);
+				LOG_ERROR("OpenMPTMusicInterface: Failed to seek to frame %llu\n", frame);
 				return;
 			}
 		} // no seek if theOffset == 0; decoder is already at start
@@ -480,7 +481,7 @@ void OpenMPTMusicInterface::FadeIn(int theSongId, int theOffset, double theSpeed
 			ma_result result = ma_decoder_seek_to_pcm_frame(&info->mDecoder, frame);
 			if (result != MA_SUCCESS)
 			{
-				SDL_Log("OpenMPTMusicInterface: Failed to seek to frame %llu\n", frame);
+				LOG_ERROR("OpenMPTMusicInterface: Failed to seek to frame %llu\n", frame);
 				return;
 			}
 		} // no seek if theOffset == 0; decoder is already at start
