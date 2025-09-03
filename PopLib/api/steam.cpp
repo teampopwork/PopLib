@@ -25,7 +25,7 @@ bool SteamAPI::Init(const std::string &appId)
 		{
 			appidFile << appId;
 			appidFile.close();
-			LOG_INFO("SteamAPI: steam_appid.txt written successfully.");
+			LOG_INFO("SteamAPI: steam_appid.txt written successfully");
 		}
 		else
 		{
