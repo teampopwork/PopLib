@@ -19,6 +19,7 @@
 #else
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 
 #define _strtime strftime
 #endif
@@ -575,7 +576,8 @@ std::string AppBase::GetProductVersion(const std::string &thePath)
 
 	return aProductVersion;
 #else
-	return "unknown";
+	// @ThePixelMoon: a good substitute
+	return POPLIB_VERSION;
 #endif
 }
 

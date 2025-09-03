@@ -87,12 +87,15 @@ typedef std::map<std::wstring, std::wstring> WStringWStringMap;
 typedef PopString::value_type PopChar;
 #define HAS_PopChar
 
+// @ThePixelMoon: stupid cmake refuses to set these,
+// TODO: change these every new version
+
 #ifndef POPLIB_VERSION_MAJOR
-#define POPLIB_VERSION_MAJOR 0
+#define POPLIB_VERSION_MAJOR 2
 #endif
 
 #ifndef POPLIB_VERSION_MINOR
-#define POPLIB_VERSION_MINOR 0
+#define POPLIB_VERSION_MINOR 1
 #endif
 
 #ifndef POPLIB_VERSION_PATCH
@@ -100,7 +103,7 @@ typedef PopString::value_type PopChar;
 #endif
 
 #ifndef POPLIB_VERSION_STAGE
-#define POPLIB_VERSION_STAGE unknown
+#define POPLIB_VERSION_STAGE "alpha"
 #endif
 
 #define STR_HELPER(x) #x
@@ -330,5 +333,8 @@ struct StringLessNoCase
 };
 
 } // namespace PopLib
+
+// @ThePixelMoon: compatibility.
+namespace Sexy = PopLib;
 
 #endif
