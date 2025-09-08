@@ -32,5 +32,12 @@ cmake --build build --config Release
 You can keep `Release`, OR you can replace it with `Debug` for debugging purposes. And voilà, you've built **PopLib**!
 
 ## Font Building
+This may be changed in the future due to dev wants and needs.  
+Navigate to the tools/old folder.  There is a series of programs called "Fontbuilder" and "FontTester", both are executables.  To build a font, first select the font to use after launching the program.  You can also limit the amount of characters as you wish (this is especially useful for scoring, as you can do "0123456789" as a base, and the library's useful functions will automatically calculate the score with the string functions as needed). 
+Once finished, hit "build".  NOW: You will notice two files.  A txt file, and a PNG file that lists all the characters you used.  **DO NOT USE THE IMAGES to draw your fonts!!! And DO NOT use those images as a resource in your resource.xml file.  Use the txt file instead.**
+This is referred to as a FONT DESCRIPTOR TXT FILE.  It is a plain text file with specific functionality tailored to the font's characteristics.  Using this will help you draw the font.  Not the image!  It was popcap's older way of rendering fonts with the imagefont class.  It is convienient.
 
+**For your font tester executable:**
+Navigate to the same tools/old folder.  Click on FontTester.  You should see a similar interface, but you will notice there is a black background.  Once you import the font descriptor txt file, it will display the font in full detail.  You can colorize the font, and change its properties such as Kerning values, line spacing offsets, etc.
 ## Using other Tools
+PopPak: This tool is used to generate main.pak files which were used in later PopCap games.  
