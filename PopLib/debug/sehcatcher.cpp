@@ -961,7 +961,8 @@ void SEHCatcher::ShowErrorDialog(const std::string &theErrorTitle, const std::st
 	ImGui_ImplSDL3_InitForSDLRenderer(mWindow, mRenderer);
 	ImGui_ImplSDLRenderer3_Init(mRenderer);
 
-	SDL_SetClipboardText(cstr); // we're not lying.
+	// @ThePixelMoon: Oopsie!
+	SDL_SetClipboardText(mErrorText.c_str()); // we're not lying.
 
 	while (!mExiting)
 	{
