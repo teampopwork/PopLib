@@ -46,16 +46,18 @@ Board::Board(V14DemoApp* theApp)
 
 	SysFont* aFont = new SysFont(mApp, LiberationSans_Regular, LiberationSans_Regular_Size, 12, 0, false, false, false);
 
+	// @ThePixelMoon: moved because why not
 	mDemoButton = new ButtonWidget(0, this);
 	mDemoButton->mLabel = "Demo Widget";
-	mDemoButton->SetFont(aFont);
-	mDemoButton->Resize(10, 10, 10 + aFont->StringWidth(mDemoButton->mLabel), 50);
+	mDemoButton->SetFont(FONT_DEFAULT);
+	int w = FONT_DEFAULT->StringWidth(mDemoButton->mLabel);
+	mDemoButton->Resize(mApp->mWidth - 20 - w, 70, w + 10, 50);
 	AddWidget(mDemoButton);
 
 	mDialogButton = new ButtonWidget(1, this);
 	mDialogButton->mLabel = "Do Dialog";
 	mDialogButton->SetFont(FONT_DEFAULT);
-	int w = FONT_DEFAULT->StringWidth(mDialogButton->mLabel);
+	w = FONT_DEFAULT->StringWidth(mDialogButton->mLabel);
 	mDialogButton->Resize(mApp->mWidth - 20 - w, 10, w + 10, 50);
 	AddWidget(mDialogButton);
 
