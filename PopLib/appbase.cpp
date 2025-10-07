@@ -2178,7 +2178,20 @@ void AppBase::MakeWindow()
 {
 	int aWindowFlags = mIsWindowed ? 0 : SDL_WINDOW_FULLSCREEN;
 
-	mWindow = SDL_CreateWindow(mTitle.c_str(), mWidth, mHeight, aWindowFlags | SDL_WINDOW_OPENGL);
+	std::string fullTitle = mTitle.c_str();
+	switch (mRendererAPI)
+	{
+		case Renderers::SDL:
+			fullTitle += " | SDL";
+			break;
+		case Renderers::OpenGL:
+			fullTitle += " | OpenGL";
+			break;
+		default:
+			break;
+	}
+
+	mWindow = SDL_CreateWindow(fullTitle.c_str(), mWidth, mHeight, aWindowFlags | SDL_WINDOW_OPENGL);
 	if (mWindow == nullptr)
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Window Creation Failed", SDL_GetError(), nullptr);
