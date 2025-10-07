@@ -667,14 +667,14 @@ void EditWidget::MouseEnter()
 {
 	Widget::MouseEnter();
 
-	mWidgetManager->mApp->SetCursor(CURSOR_TEXT);
+	mWidgetManager->mApp->SetCursor(CursorType::Text);
 }
 
 void EditWidget::MouseLeave()
 {
 	Widget::MouseLeave();
 
-	mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+	mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 }
 
 void EditWidget::MarkDirty()

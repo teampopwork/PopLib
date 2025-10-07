@@ -141,7 +141,7 @@ AppBase::AppBase()
 	mFastForwardToMarker = false;
 	mFastForwardStep = false;
 	mSoundManager = nullptr;
-	mCursorNum = CURSOR_POINTER;
+	mCursorNum = CursorType::Pointer;
 	mMouseIn = false;
 	mRunning = false;
 	mActive = true;
@@ -199,7 +199,7 @@ AppBase::AppBase()
 	mDebugKeysEnabled = false;
 	mNoSoundNeeded = false;
 
-	mRendererAPI = RENDERER_OPENGL;
+	mRendererAPI = Renderers::OpenGL;
 	mSyncRefreshRate = 100;
 	mVSyncUpdates = false;
 	mVSyncBroken = false;
@@ -221,7 +221,8 @@ AppBase::AppBase()
 
 	int i;
 
-	for (i = 0; i < NUM_CURSORS; i++)
+	using underlying = std::underlying_type_t<CursorType>;
+	for (underlying i = 0; i < static_cast<underlying>(CursorType::Last); i++)
 		mCursorImages[i] = nullptr;
 
 	for (i = 0; i < 256; i++)
@@ -587,13 +588,16 @@ void AppBase::WaitForLoadingThread()
 		SDL_Delay(20);
 }
 
-void AppBase::SetCursorImage(int theCursorNum, Image *theImage)
+void AppBase::SetCursorImage(CursorType theCursorNum, Image *theImage)
 {
-	if ((theCursorNum >= 0) && (theCursorNum < NUM_CURSORS))
-	{
-		mCursorImages[theCursorNum] = theImage;
-		EnforceCursor();
-	}
+    using underlying = std::underlying_type_t<CursorType>;
+
+    if (static_cast<underlying>(theCursorNum) >= 0 &&
+        static_cast<underlying>(theCursorNum) < static_cast<underlying>(CursorType::Last))
+    {
+        mCursorImages[static_cast<underlying>(theCursorNum)] = theImage;
+        EnforceCursor();
+    }
 }
 
 int WriteScreenShotThread(void *theArg)
@@ -907,7 +911,7 @@ double AppBase::GetLoadingThreadProgress()
 	return std::min(mCompletedLoadingThreadTasks / (double)mNumLoadingThreadTasks, 1.0);
 }
 
-bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType, const uchar *theValue, ulong theLength)
+bool AppBase::RegistryWrite(const std::string &theValueName, JSONRegistryType theType, const uchar *theValue, ulong theLength)
 {
 	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path config = GetAppDataFolder() + mRegKey + "/registry.json"; // always registry.json
@@ -929,18 +933,19 @@ bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType,
 
 	switch (theType)
 	{
-	case JSON_STRING:
+	case JSONRegistryType::String:
 		j[theValueName] = std::string(reinterpret_cast<const char *>(theValue), theLength);
 		break;
-	case JSON_INTEGER:
+	case JSONRegistryType::Integer:
 		if (theLength == sizeof(int))
 			j[theValueName] = *reinterpret_cast<const int *>(theValue);
 		break;
-	case JSON_BOOLEAN:
+	case JSONRegistryType::Bool:
 		if (theLength == sizeof(int))
 			j[theValueName] = (*reinterpret_cast<const int *>(theValue)) != 0;
 		break;
-	case JSON_DATA: {
+	case JSONRegistryType::Data:
+	{
 		std::vector<uchar> bin(theValue, theValue + theLength);
 		j[theValueName] = bin;
 		break;
@@ -958,23 +963,23 @@ bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType,
 
 bool AppBase::RegistryWriteString(const std::string &theValueName, const std::string &theString)
 {
-	return RegistryWrite(theValueName, JSON_STRING, (uchar *)theString.c_str(), theString.length());
+	return RegistryWrite(theValueName, JSONRegistryType::String, (uchar *)theString.c_str(), theString.length());
 }
 
 bool AppBase::RegistryWriteInteger(const std::string &theValueName, int theValue)
 {
-	return RegistryWrite(theValueName, JSON_INTEGER, (uchar *)&theValue, sizeof(int));
+	return RegistryWrite(theValueName, JSONRegistryType::Integer, (uchar *)&theValue, sizeof(int));
 }
 
 bool AppBase::RegistryWriteBoolean(const std::string &theValueName, bool theValue)
 {
 	int aValue = theValue ? 1 : 0;
-	return RegistryWrite(theValueName, JSON_BOOLEAN, (uchar *)&aValue, sizeof(int));
+	return RegistryWrite(theValueName, JSONRegistryType::Bool, (uchar *)&aValue, sizeof(int));
 }
 
 bool AppBase::RegistryWriteData(const std::string &theValueName, const uchar *theValue, ulong theLength)
 {
-	return RegistryWrite(theValueName, JSON_DATA, (uchar *)theValue, theLength);
+	return RegistryWrite(theValueName, JSONRegistryType::Data, (uchar *)theValue, theLength);
 }
 
 void AppBase::WriteToRegistry()
@@ -1045,12 +1050,12 @@ bool AppBase::RegistryGetSubKeys(const std::string &theKeyName, StringVector *th
 	return false;
 }
 
-bool AppBase::RegistryRead(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength)
+bool AppBase::RegistryRead(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength)
 {
 	return RegistryReadKey(theValueName, theType, theValue, theLength, 0);
 }
 
-bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength,
+bool AppBase::RegistryReadKey(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength,
 							  ulong theKey)
 {
 	// the Windows(TM) registry isn't available in linux, we use json!!!
@@ -1075,7 +1080,7 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		return false;
 
 	auto &entry = j[theValueName];
-	// JSON_STRING
+	// JSONRegistryType::String
 	if (entry.is_string())
 	{
 		std::string s = entry.get<std::string>();
@@ -1083,10 +1088,10 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 			return false;
 		std::memcpy(theValue, s.data(), s.size());
 		*theLength = static_cast<ulong>(s.size());
-		*theType = JSON_STRING;
+		*theType = JSONRegistryType::String;
 		return true;
 	}
-	// JSON_INTEGER
+	// JSONRegistryType::Integer
 	else if (entry.is_number_integer())
 	{
 		if (*theLength < sizeof(int))
@@ -1094,10 +1099,10 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		int v = entry.get<int>();
 		std::memcpy(theValue, &v, sizeof(int));
 		*theLength = sizeof(int);
-		*theType = JSON_INTEGER;
+		*theType = JSONRegistryType::Integer;
 		return true;
 	}
-	// JSON_BOOLEAN
+	// JSONRegistryType::Bool
 	else if (entry.is_boolean())
 	{
 		if (*theLength < sizeof(int))
@@ -1105,10 +1110,10 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		int b = entry.get<bool>() ? 1 : 0;
 		std::memcpy(theValue, &b, sizeof(int));
 		*theLength = sizeof(int);
-		*theType = JSON_BOOLEAN;
+		*theType = JSONRegistryType::Bool;
 		return true;
 	}
-	// JSON_DATA
+	// JSONRegistryType::Data
 	else if (entry.is_array())
 	{
 		size_t size = entry.size();
@@ -1117,7 +1122,7 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		for (size_t i = 0; i < size; ++i)
 			theValue[i] = static_cast<uchar>(entry[i].get<int>());
 		*theLength = static_cast<ulong>(size);
-		*theType = JSON_DATA;
+		*theType = JSONRegistryType::Data;
 		return true;
 	}
 
@@ -2191,11 +2196,11 @@ void AppBase::MakeWindow()
 		//-- rendering
 		switch (mRendererAPI)
 		{
-		case RENDERER_SDL: {
+		case Renderers::SDL: {
 			mRenderer = new SDLRenderer(this);
 			break;
 		}
-		case RENDERER_OPENGL: {
+		case Renderers::OpenGL: {
 			mRenderer = new GLRenderer(this);
 			break;
 		}
@@ -2398,40 +2403,40 @@ void AppBase::EnforceCursor()
 
 	switch (mCursorNum)
 	{
-	case CURSOR_HAND:
+	case CursorType::Hand:
 		sdlCursorType = SDL_SYSTEM_CURSOR_POINTER;
 		break;
-	case CURSOR_DRAGGING:
+	case CursorType::Dragging:
 		sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
 		break;
-	case CURSOR_TEXT:
+	case CursorType::Text:
 		sdlCursorType = SDL_SYSTEM_CURSOR_TEXT;
 		break;
-	case CURSOR_CIRCLE_SLASH:
+	case CursorType::CircleSlash:
 		sdlCursorType = SDL_SYSTEM_CURSOR_NOT_ALLOWED;
 		break;
-	case CURSOR_SIZEALL:
+	case CursorType::SizeAll:
 		sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
 		break;
-	case CURSOR_SIZENESW:
+	case CursorType::SizeNESW:
 		sdlCursorType = SDL_SYSTEM_CURSOR_NESW_RESIZE;
 		break;
-	case CURSOR_SIZENS:
+	case CursorType::SizeNS:
 		sdlCursorType = SDL_SYSTEM_CURSOR_NS_RESIZE;
 		break;
-	case CURSOR_SIZENWSE:
+	case CursorType::SizeNWSE:
 		sdlCursorType = SDL_SYSTEM_CURSOR_NWSE_RESIZE;
 		break;
-	case CURSOR_SIZEWE:
+	case CursorType::SizeWE:
 		sdlCursorType = SDL_SYSTEM_CURSOR_EW_RESIZE;
 		break;
-	case CURSOR_WAIT:
+	case CursorType::Wait:
 		sdlCursorType = SDL_SYSTEM_CURSOR_WAIT;
 		break;
-	case CURSOR_NONE:
+	case CursorType::Unknown:
 		SDL_HideCursor();
 		return;
-	case CURSOR_POINTER:
+	case CursorType::Pointer:
 	default:
 		sdlCursorType = SDL_SYSTEM_CURSOR_DEFAULT;
 		break;
@@ -2444,8 +2449,8 @@ void AppBase::EnforceCursor()
 	}
 	else
 	{
-
-		if ((mCursorImages[mCursorNum] == nullptr) || ((!mCustomCursorsEnabled) && (mCursorNum != CURSOR_CUSTOM)))
+		if ((mCursorImages[static_cast<int>(mCursorNum)] == nullptr) ||
+			((!mCustomCursorsEnabled) && (mCursorNum != CursorType::Custom)))
 		{
 			SDL_Cursor *aCursor = SDL_CreateSystemCursor(sdlCursorType);
 			SDL_SetCursor(aCursor);
@@ -2453,11 +2458,18 @@ void AppBase::EnforceCursor()
 		else
 		{
 			SDL_Surface *aSurface = SDL_CreateSurfaceFrom(
-				mCursorImages[mCursorNum]->mWidth, mCursorImages[mCursorNum]->mHeight, SDL_PIXELFORMAT_ARGB8888,
-				((SDLImage *)mCursorImages[mCursorNum])->GetBits(), mCursorImages[mCursorNum]->mWidth * sizeof(ulong));
+				mCursorImages[static_cast<int>(mCursorNum)]->mWidth,
+				mCursorImages[static_cast<int>(mCursorNum)]->mHeight,
+				SDL_PIXELFORMAT_ARGB8888,
+				static_cast<SDLImage*>(mCursorImages[static_cast<int>(mCursorNum)])->GetBits(),
+				mCursorImages[static_cast<int>(mCursorNum)]->mWidth * sizeof(ulong)
+			);
 
-			SDL_Cursor *aCursor = SDL_CreateColorCursor(aSurface, mCursorImages[mCursorNum]->mWidth / 2,
-														mCursorImages[mCursorNum]->mHeight / 2);
+			SDL_Cursor *aCursor = SDL_CreateColorCursor(
+				aSurface,
+				mCursorImages[static_cast<int>(mCursorNum)]->mWidth / 2,
+				mCursorImages[static_cast<int>(mCursorNum)]->mHeight / 2
+			);
 
 			SDL_SetCursor(aCursor);
 
@@ -3235,11 +3247,11 @@ void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::str
 	//-- rendering
 	else if (theParamName == "-sdlrenderer")
 	{
-		mRendererAPI = RENDERER_SDL;
+		mRendererAPI = Renderers::SDL;
 	}
 	else if (theParamName == "-opengl")
 	{
-		mRendererAPI = RENDERER_OPENGL;
+		mRendererAPI = Renderers::OpenGL;
 	}
 	//-- end rendering
 	else
@@ -3348,9 +3360,7 @@ void AppBase::Init()
 	SetMusicVolume(mMusicVolume);
 
 	if (IsScreenSaver())
-	{
-		SetCursor(CURSOR_NONE);
-	}
+		SetCursor(CursorType::Unknown);
 
 	InitHook();
 
@@ -3377,13 +3387,13 @@ std::string AppBase::GetClipboard()
 	return aString;
 }
 
-void AppBase::SetCursor(int theCursorNum)
+void AppBase::SetCursor(CursorType theCursorNum)
 {
 	mCursorNum = theCursorNum;
 	EnforceCursor();
 }
 
-int AppBase::GetCursor()
+CursorType AppBase::GetCursor()
 {
 	return mCursorNum;
 }

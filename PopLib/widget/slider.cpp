@@ -82,7 +82,7 @@ void Slider::MouseDown(int x, int y, int theClickCount)
 
 		if ((x >= aThumbX) && (x < aThumbX + mThumbImage->GetWidth()))
 		{
-			mWidgetManager->mApp->SetCursor(CURSOR_DRAGGING);
+			mWidgetManager->mApp->SetCursor(CursorType::Dragging);
 			mDragging = true;
 			mRelX = x - aThumbX;
 		}
@@ -99,7 +99,7 @@ void Slider::MouseDown(int x, int y, int theClickCount)
 
 		if ((y >= aThumbY) && (y < aThumbY + mThumbImage->GetHeight()))
 		{
-			mWidgetManager->mApp->SetCursor(CURSOR_DRAGGING);
+			mWidgetManager->mApp->SetCursor(CursorType::Dragging);
 			mDragging = true;
 			mRelY = y - aThumbY;
 		}
@@ -119,18 +119,18 @@ void Slider::MouseMove(int x, int y)
 		int aThumbX = (int)(mVal * (mWidth - mThumbImage->GetWidth()));
 
 		if ((x >= aThumbX) && (x < aThumbX + mThumbImage->GetWidth()))
-			mWidgetManager->mApp->SetCursor(CURSOR_DRAGGING);
+			mWidgetManager->mApp->SetCursor(CursorType::Dragging);
 		else
-			mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+			mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 	}
 	else
 	{
 		int aThumbY = (int)(mVal * (mHeight - mThumbImage->GetHeight()));
 
 		if ((y >= aThumbY) && (y < aThumbY + mThumbImage->GetHeight()))
-			mWidgetManager->mApp->SetCursor(CURSOR_DRAGGING);
+			mWidgetManager->mApp->SetCursor(CursorType::Dragging);
 		else
-			mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+			mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 	}
 }
 
@@ -161,12 +161,12 @@ void Slider::MouseDrag(int x, int y)
 void Slider::MouseUp(int x, int y)
 {
 	mDragging = false;
-	mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+	mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 	mListener->SliderVal(mId, mVal);
 }
 
 void Slider::MouseLeave()
 {
 	if (!mDragging)
-		mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+		mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 }

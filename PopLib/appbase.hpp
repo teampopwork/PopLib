@@ -17,31 +17,29 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-// H522
-
 /**
  * @brief registry types, but json
  */
-enum JSON_RTYPE
+enum class JSONRegistryType
 {
-	JSON_NONE = 0,
-	JSON_STRING,
-	JSON_INTEGER,
-	JSON_BOOLEAN,
-	JSON_DATA,
-	JSON_LAST
+	Unknown = -1,
+	String = 0,
+	Integer,
+	Bool,
+	Data,
+	Last
 };
 
 /**
  * @brief the interface types
  */
-enum RendererAPI
+enum class Renderers
 {
-	RENDERER_NONE = 0,
-	RENDERER_SDL,							// SDLRenderer
-	RENDERER_OPENGL,						// GLRenderer
-	RENDERER_NUM,							// number of renderer APIs
-	RENDERER_3D_ACCEL = RENDERER_OPENGL, 	// 3D Accelerated APIs
+	Unknown = -1,
+	SDL = 0,		   // SDLRenderer
+	OpenGL,			   // GLRenderer
+	Last,			   // number of renderer APIs
+	_3DAccel = OpenGL, // 3D Accelerated APIs
 };
 
 namespace ImageLib
@@ -89,23 +87,26 @@ typedef std::map<std::string, StringVector> StringStringVectorMap;
 /**
  * @brief cursor types
  */
-enum CursorType
+enum class CursorType
 {
-	CURSOR_NONE = 0,
-	CURSOR_POINTER,
-	CURSOR_HAND,
-	CURSOR_DRAGGING,
-	CURSOR_TEXT,
-	CURSOR_CIRCLE_SLASH,
-	CURSOR_SIZEALL,
-	CURSOR_SIZENESW,
-	CURSOR_SIZENS,
-	CURSOR_SIZENWSE,
-	CURSOR_SIZEWE,
-	CURSOR_WAIT,
-	CURSOR_CUSTOM,
-	NUM_CURSORS
+	Unknown = -1,
+	Pointer = 0,
+	Hand,
+	Dragging,
+	Text,
+	CircleSlash,
+	SizeAll,
+	SizeNESW,
+	SizeNS,
+	SizeNWSE,
+	SizeWE,
+	Wait,
+	Custom,
+	Last
 };
+
+// dirty stupid hack
+static constexpr auto CursorCount = static_cast<std::underlying_type_t<CursorType>>(CursorType::Last);
 
 /**
  * @brief show fps types
@@ -259,7 +260,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief the game(product) version
 	std::string mProductVersion;
 	/// @brief cursor images, max.: 13
-	Image *mCursorImages[NUM_CURSORS];
+	Image *mCursorImages[CursorCount];
 	/// @brief titlebar icon, can use .rc for that if on windows
 	Image *mTitleBarIcon;
 	/// @brief if set, overrides the cursor
@@ -345,10 +346,10 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief the sdl window
 	SDL_Window *mWindow;
 	/// @brief the interface type
-	RendererAPI mRendererAPI;
+	Renderers mRendererAPI;
 
 	/// @brief cursor number
-	int mCursorNum;
+	CursorType mCursorNum;
 	/// @brief (SoundManager) app sound manager
 	SoundManager *mSoundManager;
 	/// @brief list of widgets to be safely deleted
@@ -537,7 +538,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theValue 
 	/// @param theLength 
 	/// @return true if success
-	bool RegistryRead(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength);
+	bool RegistryRead(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength);
 	/// @brief reads a saved setting from .json
 	/// @param theValueName 
 	/// @param theType 
@@ -545,7 +546,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theLength 
 	/// @param theMainKey 
 	/// @return true if success
-	bool RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength,
+	bool RegistryReadKey(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength,
 						 ulong theMainKey = 0);
 	/// @brief writes a setting to .json
 	/// @param theValueName 
@@ -553,7 +554,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theValue 
 	/// @param theLength 
 	/// @return true if success
-	bool RegistryWrite(const std::string &theValueName, JSON_RTYPE theType, const uchar *theValue, ulong theLength);
+	bool RegistryWrite(const std::string &theValueName, JSONRegistryType theType, const uchar *theValue, ulong theLength);
 
   public:
 	/// @brief constructor
@@ -726,10 +727,10 @@ class AppBase : public ButtonListener, public DialogListener
 
 	/// @brief sets a cursor by id
 	/// @param theCursorNum 
-	void SetCursor(int theCursorNum);
+	void SetCursor(CursorType theCursorNum);
 	/// @brief gets the current cursor id
 	/// @return current cursor id as int
-	int GetCursor();
+	CursorType GetCursor();
 	/// @brief enables custom cursors
 	/// @param enabled 
 	void EnableCustomCursors(bool enabled);
@@ -768,7 +769,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief sets a cursor by id and image
 	/// @param theCursorNum 
 	/// @param theImage 
-	void SetCursorImage(int theCursorNum, Image *theImage);
+	void SetCursorImage(CursorType theCursorNum, Image *theImage);
 
 	/// @brief creates a crossfade image
 	/// @param theImage1 

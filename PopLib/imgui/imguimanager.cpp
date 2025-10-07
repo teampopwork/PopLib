@@ -43,14 +43,14 @@ ImGuiManager::ImGuiManager(Renderer *theInterface)
 
 	switch (gAppBase->mRendererAPI)
 	{
-		case RENDERER_SDL:
+		case Renderers::SDL:
 		{
 			SDLRenderer *aInterface = (SDLRenderer*)mRenderer;
 			ImGui_ImplSDL3_InitForSDLRenderer(gAppBase->mWindow, aInterface->mRenderer);
 			ImGui_ImplSDLRenderer3_Init(aInterface->mRenderer);
 			break;
 		}
-		case RENDERER_OPENGL:
+		case Renderers::OpenGL:
 		{
 			GLRenderer *aInterface = (GLRenderer*)mRenderer;
 			ImGui_ImplSDL3_InitForOpenGL(gAppBase->mWindow, aInterface->mContext);
@@ -82,13 +82,13 @@ void ImGuiManager::Frame(void)
 {
 	switch (gAppBase->mRendererAPI)
 	{
-		case RENDERER_SDL:
+		case Renderers::SDL:
 		{
 			ImGui_ImplSDLRenderer3_NewFrame();
 			ImGui_ImplSDL3_NewFrame();
 			break;
 		}
-		case RENDERER_OPENGL:
+		case Renderers::OpenGL:
 		{
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL3_NewFrame();
@@ -116,13 +116,13 @@ ImGuiManager::~ImGuiManager()
 {
 	switch (gAppBase->mRendererAPI)
 	{
-		case RENDERER_SDL:
+		case Renderers::SDL:
 		{
 			ImGui_ImplSDLRenderer3_Shutdown();
 			ImGui_ImplSDL3_Shutdown();
 			break;
 		}
-		case RENDERER_OPENGL:
+		case Renderers::OpenGL:
 		{
 			ImGui_ImplOpenGL3_Shutdown();
 			ImGui_ImplSDL3_Shutdown();

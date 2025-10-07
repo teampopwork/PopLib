@@ -321,7 +321,7 @@ void Dialog::MouseDown(int x, int y, int theBtnNum, int theClickCount)
 {
 	if (theClickCount == 1)
 	{
-		mWidgetManager->mApp->SetCursor(CURSOR_DRAGGING);
+		mWidgetManager->mApp->SetCursor(CursorType::Dragging);
 		mDragging = true;
 		mDragMouseX = x;
 		mDragMouseY = y;
@@ -367,7 +367,7 @@ void Dialog::MouseUp(int x, int y, int theBtnNum, int theClickCount)
 {
 	if (mDragging)
 	{
-		mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+		mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 		mDragging = false;
 	}
 	Widget::MouseUp(x, y, theBtnNum, theClickCount);

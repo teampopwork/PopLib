@@ -247,9 +247,9 @@ void Widget::ShowFinger(bool on)
 		return;
 
 	if (on)
-		mWidgetManager->mApp->SetCursor(CURSOR_HAND);
+		mWidgetManager->mApp->SetCursor(CursorType::Hand);
 	else
-		mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+		mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 
 	/*if (on)
 		mWidgetManager->mApplet.setCursor(new Cursor(Cursor.HAND_CURSOR));

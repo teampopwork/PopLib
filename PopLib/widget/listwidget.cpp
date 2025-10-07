@@ -442,9 +442,9 @@ void ListWidget::MouseMove(int x, int y)
 		}
 
 		if (mHiliteIdx == -1 || !mDoFingerWhenHilited)
-			mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+			mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 		else
-			mWidgetManager->mApp->SetCursor(CURSOR_HAND);
+			mWidgetManager->mApp->SetCursor(CursorType::Hand);
 	}
 }
 
@@ -468,7 +468,7 @@ void ListWidget::MouseLeave()
 		aListWidget = aListWidget->mChild;
 	}
 
-	mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+	mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 }
 
 void ListWidget::SetSelect(int theSelectIdx)
