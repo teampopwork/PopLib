@@ -7,9 +7,7 @@ void open_rect(sol::state_view lua)
 {
 	sol::table poplib;
 	if (lua["PopLib"].valid() && lua["PopLib"].get_type() == sol::type::table)
-	{
 		poplib = lua["PopLib"];
-	}
 	else
 	{
 		poplib = lua.create_table();
