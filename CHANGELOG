@@ -11,6 +11,10 @@ General
 * Added Dear ImGui support for debug UI's
 * Replaced the normal .pak archives with .gpak (NEW!!!!!!!!!)
 
+Scripting
+=========
+* Added Lua scripting support
+
 AppBase
 ===========
 * Replaced the Windows API input parsing with SDL3 events.

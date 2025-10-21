@@ -141,6 +141,12 @@ FetchContent_Declare(
     GIT_TAG main
 )
 
+FetchContent_Declare(
+    Lua
+    GIT_REPOSITORY https://github.com/walterschell/Lua
+    GIT_TAG master
+)
+
 # the most hackiest hacks i've ever done
 if(APPLE)
     find_library(OPENAL_LIBRARY OpenAL REQUIRED)
@@ -206,7 +212,7 @@ FetchContent_Declare(
     GIT_TAG master
 )
 
-FetchContent_MakeAvailable(SDL3 SDL3_TTF miniaudio ogg vorbis curl zlib discordrpc glm)
+FetchContent_MakeAvailable(SDL3 SDL3_TTF miniaudio ogg vorbis curl zlib discordrpc glm Lua)
 
 add_subdirectory(external/misc EXCLUDE_FROM_ALL)
 add_subdirectory(PopLib)

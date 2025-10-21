@@ -157,6 +157,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     zlibstatic
     glm
     misc
+	lua_static
 	${OPENMPT_LIBRARIES}
 )
 

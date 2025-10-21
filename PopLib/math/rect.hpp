@@ -5,7 +5,7 @@
 
 #include "common.hpp"
 #include "point.hpp"
-
+#include <algorithm>
 #include <list>
 
 #ifndef _WIN32
@@ -56,10 +56,10 @@ template <class _T> class TRect
 
 	TRect<_T> Union(const TRect<_T> &theTRect)
 	{
-		_T x1 = min(mX, theTRect.mX);
-		_T x2 = max(mX + mWidth, theTRect.mX + theTRect.mWidth);
-		_T y1 = min(mY, theTRect.mY);
-		_T y2 = max(mY + mHeight, theTRect.mY + theTRect.mHeight);
+		_T x1 = std::min(mX, theTRect.mX);
+		_T x2 = std::max(mX + mWidth, theTRect.mX + theTRect.mWidth);
+		_T y1 = std::min(mY, theTRect.mY);
+		_T y2 = std::max(mY + mHeight, theTRect.mY + theTRect.mHeight);
 		return TRect<_T>(x1, y1, x2 - x1, y2 - y1);
 	}
 

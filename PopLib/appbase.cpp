@@ -14,6 +14,7 @@
 #include "math/mtrand.hpp"
 #include "readwrite/modval.hpp"
 #include "debug/sehcatcher.hpp"
+#include "scripting/scripting_base.hpp"
 #ifdef _WIN32
 #include <direct.h>
 #else
@@ -218,6 +219,8 @@ AppBase::AppBase()
 	mEnableWindowAspect = false;
 	mWindowAspect.Set(4, 3);
 	mIsWideWindow = false;
+
+	m_pScriptingBase = nullptr;
 
 	int i;
 
@@ -1385,6 +1388,9 @@ void AppBase::ShutdownHook()
 
 void AppBase::Shutdown()
 {
+	if (m_pScriptingBase)
+		m_pScriptingBase->Shutdown();
+
 	if ((mPrimaryThreadId != 0) && (SDL_GetCurrentThreadID() != mPrimaryThreadId))
 	{
 		mLoadingFailed = true;
@@ -2241,6 +2247,12 @@ void AppBase::MakeWindow()
 
 			mRenderer->mIs3D = is3D;
 		}
+	}
+
+	if (!m_pScriptingBase)
+	{
+		m_pScriptingBase = new ScriptingBase();
+		m_pScriptingBase->Initialize();
 	}
 
 	int aResult = InitInterface();
@@ -3376,6 +3388,10 @@ void AppBase::Init()
 		SetCursor(CursorType::Unknown);
 
 	InitHook();
+
+	// ok, i assume here
+	m_pScriptingBase->SetScriptFolder("scripts/");
+	m_pScriptingBase->ExecuteFolder("");
 
 	mInitialized = true;
 }

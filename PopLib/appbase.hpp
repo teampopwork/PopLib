@@ -17,6 +17,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+class ScriptingBase;
+
 /**
  * @brief registry types, but json
  */
@@ -408,6 +410,9 @@ class AppBase : public ButtonListener, public DialogListener
 	bool mLastShutdownWasGraceful;
 	/// @brief true if widescreen window
 	bool mIsWideWindow;
+
+	/// @brief Scripting interface
+	ScriptingBase* m_pScriptingBase;
 
 	/// @brief the number of loading thread tasks
 	int mNumLoadingThreadTasks;
