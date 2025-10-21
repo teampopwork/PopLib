@@ -79,6 +79,11 @@ set(LIBTYPE "STATIC" CACHE BOOL "" FORCE)
 set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
 #-- end openal
 
+#-- lua
+set(LUA_ENABLE_TESTING OFF CACHE BOOL "Disable Lua tests")
+set(LUA_ENABLE_SHARED OFF CACHE BOOL "Build static Lua library")
+#-- end lua
+
 #-- curl
 set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
 set(CURL_ZLIB OFF CACHE BOOL "Disable curl's use of system zlib" FORCE)
