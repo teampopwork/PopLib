@@ -26,6 +26,12 @@ foreach(FILE_PATH ${ALL_FILES})
     file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}" "${FILE_PATH}")
     string(REPLACE "\\" "/" REL_PATH "${REL_PATH}") # normalize for Windows
 
+	# fuck u
+    if(REL_PATH MATCHES "^todlib/toddrawtriangleinc\\.cpp$" OR
+       REL_PATH MATCHES "^todlib/toddrawtriangle\\.cpp$")
+        continue()
+    endif()
+
     if(REL_PATH MATCHES "^graphics/SWTri/SWTri\\.(cpp|h)$")
         list(APPEND FILTERED_FILES "${FILE_PATH}")
     elseif(REL_PATH MATCHES "^graphics/SWTri/")
@@ -68,6 +74,8 @@ function(capitalize_path INPUT OUTPUT)
             set(PART "ImageLib")
         elseif(LOWER_PART STREQUAL "paklib")
             set(PART "PakLib")
+		elseif(LOWER_PART STREQUAL "todlib")
+            set(PART "Todd Foley Lib")
         elseif(LOWER_PART STREQUAL "imgui")
             set(PART "Dear ImGui")
         elseif(LOWER_PART STREQUAL "readwrite")
