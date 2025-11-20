@@ -27,10 +27,6 @@
 #undef min
 #endif
 
-#ifndef MAX_PATH
-#define MAX_PATH 255
-#endif
-
 #include <string>
 #include <vector>
 #include <set>
@@ -67,14 +63,6 @@ typedef std::map<std::string, std::string> DefinesMap;
 
 #include "readwrite/modval.hpp"
 
-#ifdef _WIN32
-#include <malloc.h>
-#define STACK_ALLOC(size) _alloca(size)
-#else
-#include <alloca.h>
-#define STACK_ALLOC(size) alloca(size)
-#endif
-
 typedef std::string PopString;
 
 #define LONG_BIGE_TO_NATIVE(l)                                                                                         \
@@ -84,10 +72,6 @@ typedef std::string PopString;
 #define WORD_LITTLEE_TO_NATIVE(w) (w)
 
 #define LENGTH(anyarray) (sizeof(anyarray) / sizeof(anyarray[0]))
-
-#ifndef PI
-#define PI              (3.1415926536f)
-#endif
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -124,7 +108,6 @@ typedef PopString::value_type PopChar;
 
 #define STR_HELPER(x) #x
 #define STR_MACRO(x) STR_HELPER(x)
-#define StringToPopString(x) x
 
 #define POPLIB_VERSION STR_MACRO(POPLIB_VERSION_MAJOR) "." STR_MACRO(POPLIB_VERSION_MINOR) "." STR_MACRO(POPLIB_VERSION_PATCH) "-" STR_MACRO(POPLIB_VERSION_STAGE)
 
@@ -133,91 +116,6 @@ typedef PopString::value_type PopChar;
 #define ASSERT_ENABLED
 #endif
 
-// Holy shit, more compatibility!
-#define _S(x)                	 x
-#define PopStringToString(x) 	 x
-#define PopStringToStringFast(x) x
-
-enum DrawStringJustification
-{
-    DS_ALIGN_LEFT = 0,
-    DS_ALIGN_RIGHT = 1,
-    DS_ALIGN_CENTER = 2,
-    DS_ALIGN_LEFT_VERTICAL_MIDDLE = 3,
-    DS_ALIGN_RIGHT_VERTICAL_MIDDLE = 4,
-    DS_ALIGN_CENTER_VERTICAL_MIDDLE = 5
-};
-
-enum EmitterType
-{
-    EMITTER_CIRCLE = 0,
-    EMITTER_BOX = 1,
-    EMITTER_BOX_PATH = 2,
-    EMITTER_CIRCLE_PATH = 3,
-    EMITTER_CIRCLE_EVEN_SPACING = 4
-};
-
-enum EffectType
-{
-    EFFECT_PARTICLE = 0,
-    EFFECT_TRAIL = 1,
-    EFFECT_REANIM = 2,
-    EFFECT_ATTACHMENT = 3,
-    EFFECT_OTHER = 4
-};
-
-enum TodCurves
-{
-    CURVE_CONSTANT,             // 常函数曲线
-    CURVE_LINEAR,               // 线性曲线
-    CURVE_EASE_IN,              // 二次曲线（缓入）
-    CURVE_EASE_OUT,             // 二次曲线（缓出）
-    CURVE_EASE_IN_OUT,          // 缓入缓出曲线
-    CURVE_EASE_IN_OUT_WEAK,     // 缓入缓出曲线（效果减弱）
-    CURVE_FAST_IN_OUT,          // 快入快出曲线
-    CURVE_FAST_IN_OUT_WEAK,     // 快入快出曲线（效果减弱）
-    CURVE_WEAK_FAST_IN_OUT,     // 【废弃】弱快入快出曲线
-    CURVE_BOUNCE,               // 弹跳效果曲线
-    CURVE_BOUNCE_FAST_MIDDLE,   // 弹跳效果曲线（尖形）
-    CURVE_BOUNCE_SLOW_MIDDLE,   // 弹跳效果曲线（罩形）
-    CURVE_SIN_WAVE,             // 正弦曲线
-    CURVE_EASE_SIN_WAVE         // 缓入缓出的正弦曲线
-};
-
-enum ReanimLoopType
-{
-    REANIM_LOOP = 0,
-    REANIM_LOOP_FULL_LAST_FRAME = 1,
-    REANIM_PLAY_ONCE = 2,
-    REANIM_PLAY_ONCE_AND_HOLD = 3,
-    REANIM_PLAY_ONCE_FULL_LAST_FRAME = 4,
-    REANIM_PLAY_ONCE_FULL_LAST_FRAME_AND_HOLD = 5
-};
-
-#ifndef COMPILING_PVZ
-enum ParticleEffect
-{
-    PARTICLE_NONE = -1,
-	PARTICLE_EXAMPLE,
-    NUM_PARTICLES
-};
-#endif
-
-//////////////////////////////
-enum AttachmentID { ATTACHMENTID_NULL };
-enum CoinID { COINID_NULL };
-enum ParticleID { PARTICLEID_NULL };
-enum ParticleEmitterID { PARTICLEEMITTERID_NULL };
-enum ParticleSystemID { PARTICLESYSTEMID_NULL };
-enum PlantID { PLANTID_NULL };
-enum ReanimationID { REANIMATIONID_NULL };
-enum ZombieID { ZOMBIEID_NULL };
-
-enum TrialType
-{
-    TRIALTYPE_NONE,
-    TRIALTYPE_STAGELOCKED
-};
 
 /**
  * @namespace PopLib
@@ -438,12 +336,5 @@ struct StringLessNoCase
 
 // @ThePixelMoon: compatibility.
 namespace Sexy = PopLib;
-
-#ifndef COMPILING_PVZ
-#define BOARD_WIDTH gAppBase->mWidth
-#define BOARD_HEIGHT gAppBase->mHeight
-#define gGetCurrentLevelName() "None"
-#define gAppHasUsedCheatKeys() false
-#endif
 
 #endif

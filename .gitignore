@@ -59,6 +59,3 @@ examples/bin/openmpt-zlib.dll
 # tools
 PopPak.exe
 PopPakPWE.exe
-
-# can't show this one yet
-pvz/
