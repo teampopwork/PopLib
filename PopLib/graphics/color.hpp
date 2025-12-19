@@ -11,7 +11,7 @@ namespace PopLib
 #pragma pack(push, 1)
 struct RGBA
 {
-	unsigned char b, g, r, a;
+	unsigned char r, g, b, a;
 };
 #pragma pack(pop)
 
@@ -41,7 +41,7 @@ class Color
 	int GetBlue() const;
 	int GetAlpha() const;
 	ulong ToInt() const;
-	RGBA ToRGBA() const;
+	RGBA ToBGRA() const;
 
 	int &operator[](int theIdx);
 	int operator[](int theIdx) const;
@@ -53,3 +53,4 @@ bool operator!=(const Color &theColor1, const Color &theColor2);
 } // namespace PopLib
 
 #endif
+
