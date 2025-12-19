@@ -10,8 +10,8 @@ Color::Color() : mRed(0), mGreen(0), mBlue(0), mAlpha(255)
 }
 
 Color::Color(int theColor)
-	: mAlpha((theColor >> 24) & 0xFF), mRed((theColor >> 16) & 0xFF), mGreen((theColor >> 8) & 0xFF),
-	  mBlue((theColor) & 0xFF)
+	: mRed((theColor >> 24) & 0xFF), mGreen((theColor >> 16) & 0xFF), mBlue((theColor >> 8) & 0xFF),
+	  mAlpha((theColor) & 0xFF)
 {
 	if (mAlpha == 0)
 		mAlpha = 0xff;
@@ -102,18 +102,20 @@ int Color::operator[](int theIdx) const
 
 ulong Color::ToInt() const
 {
-	return (mAlpha << 24) | (mRed << 16) | (mGreen << 8) | (mBlue);
+	return (mRed << 24) | (mGreen << 16) | (mBlue << 8) | (mAlpha);
 }
 
-RGBA Color::ToRGBA() const
+RGBA Color::ToBGRA() const
 {
-	RGBA anRGBA;
-	anRGBA.r = mRed;
-	anRGBA.g = mGreen;
-	anRGBA.b = mBlue;
-	anRGBA.a = mAlpha;
 
-	return anRGBA;
+	//Swap the values when your doing BGRA, NOT RGBA!  This function is supposed to convert it from RGBA to BGRA.  This is only if you want an extra color format.
+	RGBA TheBGRAValue;
+	TheBGRAValue.b = mBlue;
+	TheBGRAValue.g = mGreen;
+	TheBGRAValue.r = mRed;
+	TheBGRAValue.a = mAlpha;
+
+	return TheBGRAValue;
 }
 
 bool PopLib::operator==(const Color &theColor1, const Color &theColor2)
