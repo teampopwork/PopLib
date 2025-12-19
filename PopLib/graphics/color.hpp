@@ -13,6 +13,12 @@ struct RGBA
 {
 	unsigned char r, g, b, a;
 };
+struct YUV //add YUV color components based off of ITU standard reccomendations BT.601 & BT.709.  This will most likely be a conversion set.  
+{
+	unsigned char y, u, v;
+
+
+};
 #pragma pack(pop)
 
 class Color
@@ -22,7 +28,7 @@ class Color
 	int mGreen;
 	int mBlue;
 	int mAlpha;
-
+	
 	static Color Black;
 	static Color White;
 
@@ -40,9 +46,9 @@ class Color
 	int GetGreen() const;
 	int GetBlue() const;
 	int GetAlpha() const;
-	ulong ToInt() const;
+	ulong ToRGBAInt() const;
 	RGBA ToBGRA() const;
-
+	YUV ToYUV() const;
 	int &operator[](int theIdx);
 	int operator[](int theIdx) const;
 };
