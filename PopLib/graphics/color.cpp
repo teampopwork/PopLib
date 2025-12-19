@@ -110,9 +110,9 @@ RGBA Color::ToBGRA() const
 
 	//Swap the values when your doing BGRA, NOT RGBA!  This function is supposed to convert it from RGBA to BGRA.  This is only if you want an extra color format.
 	RGBA TheBGRAValue;
-	TheBGRAValue.b = mBlue;
+	TheBGRAValue.b = mRed;
 	TheBGRAValue.g = mGreen;
-	TheBGRAValue.r = mRed;
+	TheBGRAValue.r = mBlue;
 	TheBGRAValue.a = mAlpha;
 
 	return TheBGRAValue;
