@@ -1,4 +1,7 @@
 #include "color.hpp"
+#include <algorithm>
+
+#define CLIP(X) std::clamp((X), 0, 255)//for YUV conversion
 
 using namespace PopLib;
 
@@ -43,6 +46,7 @@ Color::Color(const uchar *theElements)
 Color::Color(const int *theElements) : mRed(theElements[0]), mGreen(theElements[1]), mBlue(theElements[2]), mAlpha(0xFF)
 {
 }
+
 
 int Color::GetRed() const
 {
@@ -100,7 +104,7 @@ int Color::operator[](int theIdx) const
 	}
 }
 
-ulong Color::ToInt() const
+ulong Color::ToRGBAInt() const
 {
 	return (mRed << 24) | (mGreen << 16) | (mBlue << 8) | (mAlpha);
 }
@@ -108,14 +112,26 @@ ulong Color::ToInt() const
 RGBA Color::ToBGRA() const
 {
 
-	//Swap the values when your doing BGRA, NOT RGBA!  This function is supposed to convert it from RGBA to BGRA.  This is only if you want an extra color format.
+	//Swap the values when your doing BGRA, NOT RGBA!  This function converts it from RGBA to BGRA.
 	RGBA TheBGRAValue;
 	TheBGRAValue.b = mRed;
-	TheBGRAValue.g = mGreen;
-	TheBGRAValue.r = mBlue;
+	TheBGRAValue.g = mBlue;
+	TheBGRAValue.r = mGreen;
 	TheBGRAValue.a = mAlpha;
 
 	return TheBGRAValue;
+}
+YUV Color::ToYUV() const
+{
+	YUV yuv;
+	//YUV conversion here, uses std::clamp to convert hue sat and lum in the RGBA space.  
+	yuv.y = CLIP(((66 * mRed + 129 * mGreen + 25 * mBlue + 128) >> 8) + 16);
+	yuv.u = CLIP(((-38 * mRed - 74 * mGreen + 112 * mBlue + 128) >> 8) + 128);
+	yuv.v = CLIP(((112 * mRed - 94 * mGreen - 18 * mBlue + 128) >> 8) + 128);
+	return yuv;
+
+
+
 }
 
 bool PopLib::operator==(const Color &theColor1, const Color &theColor2)
