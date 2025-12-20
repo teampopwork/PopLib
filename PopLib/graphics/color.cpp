@@ -104,7 +104,7 @@ int Color::operator[](int theIdx) const
 	}
 }
 
-ulong Color::ToRGBAInt() const
+ulong Color::ToInt() const
 {
 	return (mRed << 24) | (mGreen << 16) | (mBlue << 8) | (mAlpha);
 }
