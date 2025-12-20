@@ -46,7 +46,7 @@ class Color
 	int GetGreen() const;
 	int GetBlue() const;
 	int GetAlpha() const;
-	ulong ToRGBAInt() const;
+	ulong ToInt() const;
 	RGBA ToBGRA() const;
 	YUV ToYUV() const;
 	int &operator[](int theIdx);
