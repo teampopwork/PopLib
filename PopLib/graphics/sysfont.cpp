@@ -191,10 +191,11 @@ void SysFont::DrawString(Graphics *g, int theX, int theY, const PopString &theSt
 {
     Renderer *interface = mApp->mRenderer;
 
+	//renderers use Y, then X. for some reason.
     if (mDrawShadow)
-        interface->DrawText(theX + 1, theY + 1 - mAscent, theString, Color(0, 0, 0, theColor.mAlpha), mTTFFont);
+        interface->DrawText(theY + 1 - mAscent, theX + 1, theString, Color(0, 0, 0, theColor.mAlpha), mTTFFont);
 
-    interface->DrawText(theX, theY - mAscent, theString, theColor, mTTFFont);
+    interface->DrawText(theY - mAscent, theX, theString, theColor, mTTFFont);
 }
 
 Font *SysFont::Duplicate()
