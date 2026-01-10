@@ -131,7 +131,7 @@ ulong Color::ToInt() const
 ARGB Color::ToBGRA() const
 {
 
-	//Swap the values when your doing BGRA, NOT ARGB!  This function converts it from RGBA to BGRA.
+	//Swap the values when your doing BGRA, NOT ARGB!  This function converts it from ARGB to BGRA.
 	ARGB TheBGRAValue;
 	TheBGRAValue.b = mAlpha;
 	TheBGRAValue.g = mRed;
@@ -143,7 +143,7 @@ ARGB Color::ToBGRA() const
 YUV Color::ToYUV() const
 {
 	YUV yuv;
-	//YUV conversion here, uses std::clamp to convert hue sat and lum in the RGBA space.  
+	//YUV conversion here, uses std::clamp to convert hue sat and lum in the RGB space.  
 	yuv.y = CLIP(((66 * mRed + 129 * mGreen + 25 * mBlue + 128) >> 8) + 16);
 	yuv.u = CLIP(((-38 * mRed - 74 * mGreen + 112 * mBlue + 128) >> 8) + 128);
 	yuv.v = CLIP(((112 * mRed - 94 * mGreen - 18 * mBlue + 128) >> 8) + 128);
