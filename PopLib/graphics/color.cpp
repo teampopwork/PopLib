@@ -13,11 +13,11 @@ Color::Color() : mRed(0), mGreen(0), mBlue(0), mAlpha(255)
 }
 
 Color::Color(int theColor)
-	: mRed((theColor >> 24) & 0xFF), mGreen((theColor >> 16) & 0xFF), mBlue((theColor >> 8) & 0xFF),
-	  mAlpha((theColor) & 0xFF)
+	: mAlpha((theColor >> 24) & 0xFF), mRed((theColor >> 16) & 0xFF), mGreen((theColor >> 8) & 0xFF),
+	Blue((theColor) & 0xFF)
 {
-	if (mAlpha == 0)
-		mAlpha = 0xff;
+	if (mBlue == 0)
+		mBlue = 0xff;
 }
 
 Color::Color(int theColor, int theAlpha)
@@ -34,16 +34,16 @@ Color::Color(int theRed, int theGreen, int theBlue, int theAlpha)
 {
 }
 
-Color::Color(const RGBA &theColor) : mRed(theColor.r), mGreen(theColor.g), mBlue(theColor.b), mAlpha(theColor.a)
+Color::Color(const ARGB &theColor) : mAlpha(theColor.a), mRed(theColor.r), mGreen(theColor.g), mBlue(theColor.b)
 {
 }
 
 Color::Color(const uchar *theElements)
-	: mRed(theElements[0]), mGreen(theElements[1]), mBlue(theElements[2]), mAlpha(0xFF)
+	: mAlpha(theElements[0]), mRed(theElements[1]), mGreen(theElements[2]), mBlue(0xFF)
 {
 }
 
-Color::Color(const int *theElements) : mRed(theElements[0]), mGreen(theElements[1]), mBlue(theElements[2]), mAlpha(0xFF)
+Color::Color(const int *theElements) : mAlpha(theElements[0]), mRed(theElements[1]), mGreen(theElements[2]), mBlue(0xFF)
 {
 }
 
@@ -75,13 +75,13 @@ int &Color::operator[](int theIdx)
 	switch (theIdx)
 	{
 	case 0:
-		return mRed;
-	case 1:
-		return mGreen;
-	case 2:
-		return mBlue;
-	case 3:
 		return mAlpha;
+	case 1:
+		return mRed;
+	case 2:
+		return mGreen;
+	case 3:
+		return mBlue;
 	default:
 		return aJunk;
 	}
@@ -106,18 +106,18 @@ int Color::operator[](int theIdx) const
 
 ulong Color::ToInt() const
 {
-	return (mRed << 24) | (mGreen << 16) | (mBlue << 8) | (mAlpha);
+	return (mAlpha << 24) | (mRed << 16) | (mGreen << 8) | (mBlue);
 }
 
-RGBA Color::ToBGRA() const
+ARGB Color::ToBGRA() const
 {
 
-	//Swap the values when your doing BGRA, NOT RGBA!  This function converts it from RGBA to BGRA.
-	RGBA TheBGRAValue;
-	TheBGRAValue.b = mRed;
-	TheBGRAValue.g = mBlue;
+	//Swap the values when your doing BGRA, NOT ARGB!  This function converts it from RGBA to BGRA.
+	ARGB TheBGRAValue;
+	TheBGRAValue.b = mAlpha;
+	TheBGRAValue.g = mRed;
 	TheBGRAValue.r = mGreen;
-	TheBGRAValue.a = mAlpha;
+	TheBGRAValue.a = mBlue;
 
 	return TheBGRAValue;
 }
@@ -136,12 +136,12 @@ YUV Color::ToYUV() const
 
 bool PopLib::operator==(const Color &theColor1, const Color &theColor2)
 {
-	return (theColor1.mRed == theColor2.mRed) && (theColor1.mGreen == theColor2.mGreen) &&
-		   (theColor1.mBlue == theColor2.mBlue) && (theColor1.mAlpha == theColor2.mAlpha);
+	return (theColor1.mAlpha == theColor2.mAlpha) && (theColor1.mRed == theColor2.mRed) &&
+		   (theColor1.mGreen == theColor2.mGreen) && (theColor1.mBlue == theColor2.mBlue);
 }
 
 bool PopLib::operator!=(const Color &theColor1, const Color &theColor2)
 {
-	return (theColor1.mRed != theColor2.mRed) || (theColor1.mGreen != theColor2.mGreen) ||
-		   (theColor1.mBlue != theColor2.mBlue) || (theColor1.mAlpha != theColor2.mAlpha);
+	return (theColor1.mAlpha != theColor2.mAlpha) || (theColor1.mRed != theColor2.mRed) ||
+		   (theColor1.mGreen != theColor2.mGreen) || (theColor1.mBlue != theColor2.mBlue);
 }
