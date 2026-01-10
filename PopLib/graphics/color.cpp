@@ -7,6 +7,25 @@ using namespace PopLib;
 
 Color Color::Black(0, 0, 0);
 Color Color::White(255, 255, 255);
+Color Color::Red (255, 0, 0);
+Color Color::Lime (0, 255, 0);
+Color Color::Blue (0, 0, 255);
+Color Color::Cyan (0, 255, 255);
+Color Color::Magenta(255, 0, 255);
+Color Color::Yellow (255, 255, 0);
+Color Color::SkyBlue (0, 160, 255);
+Color Color::Brown (128, 64, 0);
+Color Color::Orange(255, 128, 0);
+Color Color::Green (0, 128, 0);
+Color Color::SpringGreen(112, 224, 0);
+Color Color::Lavender(224, 200, 255);
+Color Color::Gold (255, 200, 0);
+Color Color::Purple (128, 0, 128);
+Color Color::Navy (0, 0, 128);
+Color Color::Gray (128, 128, 128):
+Color Color::Silver (224, 224, 224);
+Color Color::Pink (255, 192, 224);
+Color Color::Scarlet(255, 64, 0);
 
 Color::Color() : mRed(0), mGreen(0), mBlue(0), mAlpha(255)
 {
