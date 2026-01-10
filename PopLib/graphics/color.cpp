@@ -22,7 +22,7 @@ Color Color::Lavender(224, 200, 255);
 Color Color::Gold (255, 200, 0);
 Color Color::Purple (128, 0, 128);
 Color Color::Navy (0, 0, 128);
-Color Color::Gray (128, 128, 128):
+Color Color::Gray (128, 128, 128);
 Color Color::Silver (224, 224, 224);
 Color Color::Pink (255, 192, 224);
 Color Color::Scarlet(255, 64, 0);
