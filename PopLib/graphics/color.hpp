@@ -9,9 +9,9 @@ namespace PopLib
 {
 
 #pragma pack(push, 1)
-struct RGBA
+struct ARGB // change this stupid fucking definition a 3rd TIME to the CORRECT one this time.
 {
-	unsigned char r, g, b, a;
+	unsigned char a, r, g, b;
 };
 struct YUV //add YUV color components based off of ITU standard reccomendations BT.601 & BT.709.  This will most likely be a conversion set.  
 {
@@ -38,7 +38,7 @@ class Color
 	Color(int theColor, int theAlpha);
 	Color(int theRed, int theGreen, int theBlue);
 	Color(int theRed, int theGreen, int theBlue, int theAlpha);
-	Color(const RGBA &theColor);
+	Color(const ARGB &theColor);
 	Color(const uchar *theElements);
 	Color(const int *theElements);
 
@@ -47,7 +47,8 @@ class Color
 	int GetBlue() const;
 	int GetAlpha() const;
 	ulong ToInt() const;
-	RGBA ToBGRA() const;
+	ARGB ToRGBA() const;//extra pixel formats in case if certain images load weird with weird pixel formats.
+	ARGB ToBGRA() const;
 	YUV ToYUV() const;
 	int &operator[](int theIdx);
 	int operator[](int theIdx) const;
