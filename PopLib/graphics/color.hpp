@@ -67,7 +67,6 @@ class Color
 	int GetBlue() const;
 	int GetAlpha() const;
 	ulong ToInt() const;
-	ARGB ToRGBA() const;//extra pixel formats in case if certain images load weird with weird pixel formats.
 	ARGB ToBGRA() const;
 	YUV ToYUV() const;
 	int &operator[](int theIdx);
