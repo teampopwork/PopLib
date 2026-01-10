@@ -31,7 +31,27 @@ class Color
 	
 	static Color Black;
 	static Color White;
-
+//add a bunch of colors in case if a person cannot use designated functions below:
+	static Color Red; 
+	static Color Lime;
+	static Color Blue;
+	static Color Cyan;
+	static Color Magenta;
+	static Color Yellow;
+	static Color SkyBlue;
+	static Color Brown;
+	static Color Orange;
+	static Color Green;
+	static Color SpringGreen;
+	static Color Lavender;
+	static Color Gold;
+	static Color Purple;
+	static Color Navy;
+	static Color Gray;
+	static Color Silver;
+	static Color Pink;
+	static Color Scarlet;
+	
   public:
 	Color();
 	Color(int theColor);
