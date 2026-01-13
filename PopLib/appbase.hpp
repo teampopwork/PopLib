@@ -1,8 +1,7 @@
 #ifndef __APPBASE_HPP__
 #define __APPBASE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "math/rect.hpp"
@@ -18,19 +17,31 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-// H522
+class ScriptingBase;
 
 /**
  * @brief registry types, but json
  */
-enum JSON_RTYPE
+enum class JSONRegistryType
 {
-	JSON_NONE = 0,
-	JSON_STRING,
-	JSON_INTEGER,
-	JSON_BOOLEAN,
-	JSON_DATA,
-	JSON_LAST
+	Unknown = -1,
+	String = 0,
+	Integer,
+	Bool,
+	Data,
+	Last
+};
+
+/**
+ * @brief the interface types
+ */
+enum class Renderers
+{
+	Unknown = -1,
+	SDL = 0,		   // SDLRenderer
+	OpenGL,			   // GLRenderer
+	Last,			   // number of renderer APIs
+	_3DAccel = OpenGL, // 3D Accelerated APIs
 };
 
 namespace ImageLib
@@ -42,15 +53,13 @@ namespace PopLib
 {
 
 class WidgetManager;
-class SDLInterface;
+class Renderer;
 class Image;
-class SDLImage;
 class Widget;
 class SoundManager;
 class MusicInterface;
-class MemoryImage;
+class GPUImage;
 class HTTPTransfer;
-class ErrorHandler;
 class ImGuiManager;
 class Dialog;
 
@@ -64,7 +73,7 @@ class WidgetSafeDeleteInfo
 };
 
 typedef std::list<WidgetSafeDeleteInfo> WidgetSafeDeleteList;
-typedef std::set<MemoryImage *> MemoryImageSet;
+typedef std::set<GPUImage *> GPUImageSet;
 typedef std::map<int, Dialog *> DialogMap;
 typedef std::list<Dialog *> DialogList;
 typedef std::vector<std::string> StringVector;
@@ -80,23 +89,26 @@ typedef std::map<std::string, StringVector> StringStringVectorMap;
 /**
  * @brief cursor types
  */
-enum
+enum class CursorType
 {
-	CURSOR_POINTER,
-	CURSOR_HAND,
-	CURSOR_DRAGGING,
-	CURSOR_TEXT,
-	CURSOR_CIRCLE_SLASH,
-	CURSOR_SIZEALL,
-	CURSOR_SIZENESW,
-	CURSOR_SIZENS,
-	CURSOR_SIZENWSE,
-	CURSOR_SIZEWE,
-	CURSOR_WAIT,
-	CURSOR_NONE,
-	CURSOR_CUSTOM,
-	NUM_CURSORS
+	Unknown = -1,
+	Pointer = 0,
+	Hand,
+	Dragging,
+	Text,
+	CircleSlash,
+	SizeAll,
+	SizeNESW,
+	SizeNS,
+	SizeNWSE,
+	SizeWE,
+	Wait,
+	Custom,
+	Last
 };
+
+// dirty stupid hack
+static constexpr auto CursorCount = static_cast<std::underlying_type_t<CursorType>>(CursorType::Last);
 
 /**
  * @brief show fps types
@@ -136,7 +148,7 @@ enum MsgBoxFlags
  * @brief handles the game window
  *
  * the AppBase class is basically the root of all games, demos and stuff.
- * uses SDLInterface for window handling, and everything else window-related
+ * uses Renderer for window handling, and everything else window-related
  */
 class AppBase : public ButtonListener, public DialogListener
 {
@@ -184,8 +196,6 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief TBA
 	bool mbAllowExtendedChars;
 
-	/// @brief the error handler
-	ErrorHandler *mErrorHandler;
 	/// @brief imgui manager object, IGUI = ImGui
 	ImGuiManager *mIGUIManager;
 
@@ -239,8 +249,8 @@ class AppBase : public ButtonListener, public DialogListener
 	bool mFullScreenPageFlip;
 	/// @brief true if tablet pc
 	bool mTabletPC;
-	/// @brief (SDLInterface) the window interface
-	SDLInterface *mSDLInterface;
+	/// @brief the renderer
+	Renderer *mRenderer;
 	/// @brief TBA
 	bool mAlphaDisabled;
 	/// @brief (MusicInterface) the music interface, uses BASS
@@ -252,7 +262,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief the game(product) version
 	std::string mProductVersion;
 	/// @brief cursor images, max.: 13
-	Image *mCursorImages[NUM_CURSORS];
+	Image *mCursorImages[CursorCount];
 	/// @brief titlebar icon, can use .rc for that if on windows
 	Image *mTitleBarIcon;
 	/// @brief if set, overrides the cursor
@@ -280,7 +290,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief TBA
 	bool mMuteOnLostFocus;
 	/// @brief TBA
-	MemoryImageSet mMemoryImageSet;
+	GPUImageSet mGPUImageSet;
 	/// @brief TBA
 	SharedImageMap mSharedImageMap;
 	/// @brief TBA
@@ -335,14 +345,15 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief current step mode. 0 = off, 1 = step, 2 = waiting for step
 	int mStepMode;
 
+	/// @brief the sdl window
+	SDL_Window *mWindow;
+	/// @brief the interface type
+	Renderers mRendererAPI;
+
 	/// @brief cursor number
-	int mCursorNum;
+	CursorType mCursorNum;
 	/// @brief (SoundManager) app sound manager
 	SoundManager *mSoundManager;
-	/// @brief current hand cursor
-	SDL_Cursor *mHandCursor;
-	/// @brief current dragging cursor
-	SDL_Cursor *mDraggingCursor;
 	/// @brief list of widgets to be safely deleted
 	WidgetSafeDeleteList mSafeDeleteList;
 	/// @brief TBA
@@ -389,8 +400,6 @@ class AppBase : public ButtonListener, public DialogListener
 	bool mYieldMainThread;
 	/// @brief true if loading failed
 	bool mLoadingFailed;
-	/// @brief true if cursor thread running
-	bool mCursorThreadRunning;
 	/// @brief true if has system cursor
 	bool mSysCursor;
 	/// @brief true if custom cursors are enabled
@@ -401,6 +410,9 @@ class AppBase : public ButtonListener, public DialogListener
 	bool mLastShutdownWasGraceful;
 	/// @brief true if widescreen window
 	bool mIsWideWindow;
+
+	/// @brief Scripting interface
+	ScriptingBase* m_pScriptingBase;
 
 	/// @brief the number of loading thread tasks
 	int mNumLoadingThreadTasks;
@@ -465,11 +477,6 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief (ResourceManager) the app resource manager
 	ResourceManager *mResourceManager;
 
-#ifdef ZYLOM
-	/// @brief zylom game id
-	uint mZylomGameId;
-#endif
-
   protected:
 	/// @brief TBA
 	void RehupFocus();
@@ -511,15 +518,6 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief stub for loading thread
 	static int LoadingThreadProcStub(void *theArg);
 
-	// Cursor thread methods
-
-	/// @brief TBA
-	void CursorThreadProc();
-	/// @brief stub for cursor thread
-	static int CursorThreadProcStub(void *theArg);
-	/// @brief TBA
-	void StartCursorThread();
-
 	/// @brief TBA
 	void WaitForLoadingThread();
 	/// @brief TBA
@@ -545,7 +543,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theValue 
 	/// @param theLength 
 	/// @return true if success
-	bool RegistryRead(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength);
+	bool RegistryRead(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength);
 	/// @brief reads a saved setting from .json
 	/// @param theValueName 
 	/// @param theType 
@@ -553,7 +551,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theLength 
 	/// @param theMainKey 
 	/// @return true if success
-	bool RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength,
+	bool RegistryReadKey(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength,
 						 ulong theMainKey = 0);
 	/// @brief writes a setting to .json
 	/// @param theValueName 
@@ -561,7 +559,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theValue 
 	/// @param theLength 
 	/// @return true if success
-	bool RegistryWrite(const std::string &theValueName, JSON_RTYPE theType, const uchar *theValue, ulong theLength);
+	bool RegistryWrite(const std::string &theValueName, JSONRegistryType theType, const uchar *theValue, ulong theLength);
 
   public:
 	/// @brief constructor
@@ -675,9 +673,9 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief initializes the app
 	virtual void Init();
 	/// @brief TBA
-	virtual void PreSDLInterfaceInitHook();
+	virtual void PreInterfaceInitHook();
 	/// @brief TBA
-	virtual void PostSDLInterfaceInitHook();
+	virtual void PostInterfaceInitHook();
 	/// @brief change directory hook
 	/// @param theIntendedPath 
 	/// @return true if success
@@ -734,18 +732,18 @@ class AppBase : public ButtonListener, public DialogListener
 
 	/// @brief sets a cursor by id
 	/// @param theCursorNum 
-	void SetCursor(int theCursorNum);
+	void SetCursor(CursorType theCursorNum);
 	/// @brief gets the current cursor id
 	/// @return current cursor id as int
-	int GetCursor();
+	CursorType GetCursor();
 	/// @brief enables custom cursors
 	/// @param enabled 
 	void EnableCustomCursors(bool enabled);
 	/// @brief gets an image
 	/// @param theFileName 
 	/// @param commitBits 
-	/// @return SDLImage
-	virtual SDLImage *GetImage(const std::string &theFileName, bool commitBits = true);
+	/// @return GPUImage
+	virtual GPUImage *GetImage(const std::string &theFileName, bool commitBits = true);
 	/// @brief gets a shared image
 	/// @param theFileName 
 	/// @param theVariant 
@@ -757,22 +755,26 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief sets taskbar icon
 	/// @param theFileName 
 	void SetTaskBarIcon(const std::string &theFileName);
+	/// @brief Update the titlebar icon
+	/// @param theImage 
+	/// @return 
+	bool UpdateWindowIcon(Image *theImage);
 
 	/// @brief cleans shared images
 	void CleanSharedImages();
 	/// @brief TBA
 	/// @param theImage 
-	void PrecacheAdditive(MemoryImage *theImage);
+	void PrecacheAdditive(GPUImage *theImage);
 	/// @brief TBA
 	/// @param theImage 
-	void PrecacheAlpha(MemoryImage *theImage);
+	void PrecacheAlpha(GPUImage *theImage);
 	/// @brief TBA
 	/// @param theImage 
-	void PrecacheNative(MemoryImage *theImage);
+	void PrecacheNative(GPUImage *theImage);
 	/// @brief sets a cursor by id and image
 	/// @param theCursorNum 
 	/// @param theImage 
-	void SetCursorImage(int theCursorNum, Image *theImage);
+	void SetCursorImage(CursorType theCursorNum, Image *theImage);
 
 	/// @brief creates a crossfade image
 	/// @param theImage1 
@@ -780,8 +782,8 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theImage2 
 	/// @param theRect2 
 	/// @param theFadeFactor 
-	/// @return SDLImage
-	SDLImage *CreateCrossfadeImage(Image *theImage1, const Rect &theRect1, Image *theImage2, const Rect &theRect2,
+	/// @return GPUImage
+	GPUImage *CreateCrossfadeImage(Image *theImage1, const Rect &theRect1, Image *theImage2, const Rect &theRect2,
 								   double theFadeFactor);
 	/// @brief TBA
 	/// @param theImage 
@@ -790,17 +792,17 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief creates a colorized image
 	/// @param theImage 
 	/// @param theColor 
-	/// @return SDLImage
-	SDLImage *CreateColorizedImage(Image *theImage, const Color &theColor);
+	/// @return GPUImage
+	GPUImage *CreateColorizedImage(Image *theImage, const Color &theColor);
 	/// @brief copies an image
 	/// @param theImage 
 	/// @param theRect 
-	/// @return SDLImage
-	SDLImage *CopyImage(Image *theImage, const Rect &theRect);
+	/// @return GPUImage
+	GPUImage *CopyImage(Image *theImage, const Rect &theRect);
 	/// @brief copies an image
 	/// @param theImage 
-	/// @return SDLImage
-	SDLImage *CopyImage(Image *theImage);
+	/// @return GPUImage
+	GPUImage *CopyImage(Image *theImage);
 	/// @brief mirrors an image
 	/// @param theImage 
 	void MirrorImage(Image *theImage);
@@ -810,7 +812,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @brief rotates the image's hue
 	/// @param theImage 
 	/// @param theDelta 
-	void RotateImageHue(PopLib::MemoryImage *theImage, int theDelta);
+	void RotateImageHue(PopLib::GPUImage *theImage, int theDelta);
 	/// @brief converts HSL to RGB
 	/// @param r 
 	/// @param g 
@@ -835,14 +837,14 @@ class AppBase : public ButtonListener, public DialogListener
 	void RGBToHSL(const ulong *theSource, ulong *theDest, int theSize);
 
 	/// @brief adds a memory image
-	/// @param theMemoryImage 
-	void AddMemoryImage(MemoryImage *theMemoryImage);
+	/// @param theGPUImage 
+	void AddGPUImage(GPUImage *theGPUImage);
 	/// @brief removes a memory image
-	/// @param theMemoryImage 
-	void RemoveMemoryImage(MemoryImage *theMemoryImage);
+	/// @param theGPUImage 
+	void RemoveGPUImage(GPUImage *theGPUImage);
 	/// @brief removes 3d data
-	/// @param theMemoryImage 
-	void Remove3DData(MemoryImage *theMemoryImage);
+	/// @param theGPUImage 
+	void Remove3DData(GPUImage *theGPUImage);
 	/// @brief switches the current screenmode
 	virtual void SwitchScreenMode();
 	/// @brief switches the current screenmode
@@ -1036,7 +1038,7 @@ class AppBase : public ButtonListener, public DialogListener
 	/// @param theId 
 	/// @param theValue 
 	void SetDouble(const std::string &theId, double theValue);
-	/// @brief sets a string by id (string, widestring)
+	/// @brief sets a string by id (string)
 	/// @param theId 
 	/// @param theValue
 	void SetString(const std::string &theId, const std::string &theValue);
@@ -1138,7 +1140,7 @@ class AppBase : public ButtonListener, public DialogListener
 	virtual bool UpdateApp();
 	/// @brief initializes the SDL interface
 	/// @return int
-	int InitSDLInterface();
+	int InitInterface();
 	/// @brief TBA
 	/// @param relaxForASecond 
 	void ClearUpdateBacklog(bool relaxForASecond = false);

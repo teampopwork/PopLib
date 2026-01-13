@@ -26,6 +26,10 @@ examples/bin/*
 !examples/bin/*.*
 !examples/bin/**/
 
+crash.txt
+mem_leaks.txt
+temp/
+
 examples/bin/*.exe
 examples/bin/*.dll
 examples/bin/*.pdb
@@ -38,6 +42,19 @@ examples/bin/screenshots/*
 
 docs/doxygen/
 imgui.ini
+
+# IMPORTANT
+private/steam/sdk
+libsteam_api.so
+libsteam_api.dylib
+steam_api.dll
+steam_api64.dll
+steam_appid.txt
+examples/bin/libopenmpt.dll
+examples/bin/openmpt-mpg123.dll
+examples/bin/openmpt-ogg.dll
+examples/bin/openmpt-vorbis.dll
+examples/bin/openmpt-zlib.dll
 
 # tools
 PopPak.exe

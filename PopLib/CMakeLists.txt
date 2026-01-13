@@ -6,6 +6,21 @@ file(GLOB_RECURSE ALL_FILES CONFIGURE_DEPENDS
     "*.h" "*.hpp"
 )
 
+# dirty stupid hack. probably enough to not do #ifdef at the start of the files
+set(API_ALLOWED_FILES "")
+if(FEATURE_DISCORD_RPC)
+    list(APPEND API_ALLOWED_FILES
+        "api/discord.cpp"
+        "api/discord.hpp"
+    )
+endif()
+if(FEATURE_STEAM_API)
+    list(APPEND API_ALLOWED_FILES
+        "api/steam.cpp"
+        "api/steam.hpp"
+    )
+endif()
+
 set(FILTERED_FILES "")
 foreach(FILE_PATH ${ALL_FILES})
     file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}" "${FILE_PATH}")
@@ -14,6 +29,12 @@ foreach(FILE_PATH ${ALL_FILES})
     if(REL_PATH MATCHES "^graphics/SWTri/SWTri\\.(cpp|h)$")
         list(APPEND FILTERED_FILES "${FILE_PATH}")
     elseif(REL_PATH MATCHES "^graphics/SWTri/")
+        continue()
+    elseif(REL_PATH MATCHES "^api/")
+        list(FIND API_ALLOWED_FILES "${REL_PATH}" FILE_INDEX)
+        if(NOT FILE_INDEX EQUAL -1)
+            list(APPEND FILTERED_FILES "${FILE_PATH}")
+        endif()
         continue()
     else()
         list(APPEND FILTERED_FILES "${FILE_PATH}")
@@ -51,6 +72,10 @@ function(capitalize_path INPUT OUTPUT)
             set(PART "Dear ImGui")
         elseif(LOWER_PART STREQUAL "readwrite")
             set(PART "ReadWrite")
+        elseif(LOWER_PART STREQUAL "api")
+            set(PART "APIs")
+        elseif(LOWER_PART STREQUAL "chipmunk")
+            set(PART "Chipmunk Physics")
         else()
             string(SUBSTRING "${PART}" 0 1 FIRST_CHAR)
             string(SUBSTRING "${PART}" 1 -1 REST_CHARS)
@@ -86,20 +111,26 @@ add_library(${PROJECT_NAME} STATIC ${ALL_GROUPED_FILES})
 # hacks!!
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-        ${POPLIB_ROOT_DIR}
-        ${POPLIB_ROOT_DIR}/external/vorbis/include
-        ${POPLIB_ROOT_DIR}/external/openal
-        ${POPLIB_ROOT_DIR}/external/ogg/include
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${POPLIB_ROOT_DIR}/external/misc
-        ${POPLIB_ROOT_DIR}/external/discordrpc
         ${POPLIB_ROOT_DIR}/external/stb_image
+		${OPENMPT_INCLUDE_DIRS}
 )
 
-if (FEATURE_DISCORD_RPC)
-    target_include_directories(${PROJECT_NAME} PUBLIC
-        ${POPLIB_ROOT_DIR}/external/discordrpc
+if (FEATURE_STEAM_API)
+    if (NOT EXISTS "${STEAM_SDK_DIR}/public/steam/steam_api.h")
+        message(FATAL_ERROR
+            "Steamworks SDK not found in ${STEAM_SDK_DIR}.\n"
+            "Please download the SDK from https://partner.steamgames.com/downloads/ "
+            "and copy the 'sdk' folder into ${CMAKE_SOURCE_DIR}/private/steam/"
+        )
+    endif()
+
+    target_include_directories(${PROJECT_NAME}
+		PUBLIC
+        	"${STEAM_SDK_DIR}/public"
     )
+
+	target_link_libraries(${PROJECT_NAME} PUBLIC "${STEAMAPI_PATH}")
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -108,10 +139,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 	STB_IMAGE_WRITE_IMPLEMENTATION
 )
 
-if (WIN32)
-    set(BASS_LIB_PATH "${BASS_LIB_PATH}/bass.lib")
-elseif (UNIX)
-    set(BASS_LIB_PATH "${BASS_LIB_PATH}/libbass.so")
+if (NOT WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        $<$<CONFIG:Debug>:_DEBUG>
+    )
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -124,9 +155,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Vorbis::vorbis
     CURL::libcurl
     zlibstatic
-    tinyxml2
+    glm
     misc
-    ${BASS_LIB_PATH}
+	lua_static
+	${OPENMPT_LIBRARIES}
 )
 
 if (FEATURE_DISCORD_RPC)

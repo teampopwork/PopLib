@@ -1,10 +1,11 @@
 #ifndef __HTTPTRANSFER_HPP__
 #define __HTTPTRANSFER_HPP__
-#ifdef _WIN32
-#pragma once
-#endif
 
+#pragma once
+
+#ifndef CURL_STATICLIB
 #define CURL_STATICLIB
+#endif
 
 #include "common.hpp"
 #include "curl/curl.h"

@@ -1,8 +1,7 @@
 #ifndef __MEMMGR_HPP__
 #define __MEMMGR_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 //						HOW TO USE THIS FILE

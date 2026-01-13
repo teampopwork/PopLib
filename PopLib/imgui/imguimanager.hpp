@@ -1,12 +1,12 @@
 #ifndef __IMGUIMANAGER_HPP__
 #define __IMGUIMANAGER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "core/imgui.h"
 #include "core/imgui_impl_sdl3.h"
+#include "core/imgui_impl_opengl3.h"
 #include "core/imgui_impl_sdlrenderer3.h"
 
 #include <vector>
@@ -14,10 +14,10 @@
 
 namespace PopLib
 {
-class SDLInterface;
+class Renderer;
 
 /**
- * @brief imgui manager for sdlinterface
+ * @brief imgui manager that automaticaly calls the window's functions.
  */
 class ImGuiManager
 {
@@ -33,7 +33,7 @@ class ImGuiManager
 	}
 
 	/// @brief constructor
-	ImGuiManager(SDLInterface *theInterface);
+	ImGuiManager(Renderer *theInterface);
 	/// @brief destructor
 	virtual ~ImGuiManager();
 
@@ -45,8 +45,8 @@ class ImGuiManager
 	/// @param none
 	virtual void Frame(void);
 
-	/// @brief the sdlinterface
-	SDLInterface *mInterface;
+	/// @brief the interface
+	Renderer *mRenderer;
 
   private:
 	/// @brief the imgui windows list

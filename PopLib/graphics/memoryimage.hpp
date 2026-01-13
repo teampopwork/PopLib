@@ -1,8 +1,7 @@
 #ifndef __MEMORYIMAGE_HPP__
 #define __MEMORYIMAGE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "image.hpp"
 
@@ -16,7 +15,7 @@ namespace PopLib
 
 const ulong MEMORYCHECK_ID = 0x4BEEFADE;
 
-class NativeDisplay;
+class Renderer;
 class AppBase;
 
 class MemoryImage : public Image
@@ -24,7 +23,7 @@ class MemoryImage : public Image
   public:
 	ulong *mBits;
 	int mBitsChangedCount;
-	void *mD3DData;
+	void *mGPUData;
 	uint32_t mImageFlags; // see D3DInterface.h for possible values
 
 	ulong *mColorTable;
@@ -48,9 +47,9 @@ class MemoryImage : public Image
 	void Init();
 
   public:
-	virtual void *GetNativeAlphaData(NativeDisplay *theNative);
+	virtual void *GetNativeAlphaData(Renderer *theNative);
 	virtual uchar *GetRLAlphaData();
-	virtual uchar *GetRLAdditiveData(NativeDisplay *theNative);
+	virtual uchar *GetRLAdditiveData(Renderer *theNative);
 	virtual void PurgeBits();
 	virtual void DeleteSWBuffers();
 	virtual void Delete3DBuffers();
@@ -61,6 +60,11 @@ class MemoryImage : public Image
 	virtual void CommitBits();
 
 	virtual void DeleteNativeData();
+
+	static bool Check3D(Image *theImage)
+	{
+		return true;
+	}
 
 	void NormalBlt(Image *theImage, int theX, int theY, const Rect &theSrcRect, const Color &theColor);
 	void AdditiveBlt(Image *theImage, int theX, int theY, const Rect &theSrcRect, const Color &theColor);

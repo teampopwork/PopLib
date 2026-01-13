@@ -1,8 +1,7 @@
 #ifndef __LISTWIDGET_HPP__
 #define __LISTWIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "scrolllistener.hpp"
 #include "widget.hpp"

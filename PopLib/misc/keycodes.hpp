@@ -1,8 +1,7 @@
 #ifndef __KEYCODES_HPP__
 #define __KEYCODES_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include <SDL3/SDL.h>

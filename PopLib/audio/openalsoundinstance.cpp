@@ -2,10 +2,10 @@
 #include "openalsoundmanager.hpp"
 #include <complex.h>
 
-namespace PopLib {
+namespace PopLib
+{
 
-OpenALSoundInstance::OpenALSoundInstance(OpenALSoundManager* theSoundManager,
-                                         ALuint theSourceSound)
+OpenALSoundInstance::OpenALSoundInstance(OpenALSoundManager *theSoundManager, ALuint theSourceSound)
 {
 	mSoundManagerP = theSoundManager;
 	mReleased = false;
@@ -99,7 +99,7 @@ bool OpenALSoundInstance::Play(bool looping, bool autoRelease)
 
 	if (!mSoundManagerP->mALDeviceD) // hacky hack
 		return false;
-	
+
 	Stop();
 
 	mHasPlayed = true;
@@ -162,4 +162,4 @@ double OpenALSoundInstance::GetVolume()
 	return mVolume;
 }
 
-};
+}; // namespace PopLib

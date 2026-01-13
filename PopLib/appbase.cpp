@@ -2,9 +2,8 @@
 #include "widget/widgetmanager.hpp"
 #include "widget/widget.hpp"
 #include "misc/keycodes.hpp"
-#include "graphics/sdlinterface.hpp"
-#include "graphics/sdlimage.hpp"
-#include "graphics/memoryimage.hpp"
+#include "graphics/renderer.hpp"
+#include "graphics/gpuimage.hpp"
 #include "widget/dialog.hpp"
 #include "imagelib/imagelib.hpp"
 #include "audio/openalsoundmanager.hpp"
@@ -14,22 +13,23 @@
 #include "debug/perftimer.hpp"
 #include "math/mtrand.hpp"
 #include "readwrite/modval.hpp"
+#include "debug/sehcatcher.hpp"
+#include "scripting/scripting_base.hpp"
 #ifdef _WIN32
 #include <direct.h>
 #else
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 
 #define _strtime strftime
 #endif
 #include <fstream>
 #include "graphics/sysfont.hpp"
 #include "resources/resourcemanager.hpp"
-#include "audio/bassmusicinterface.hpp"
-#include "audio/bass.h"
+#include "audio/openmptmusicinterface.hpp"
 #include "misc/autocrit.hpp"
-#include "debug/debug.hpp"
-#include "debug/errorhandler.hpp"
+#include "debug/log.hpp"
 #include "paklib/pakinterface.hpp"
 #include "imgui/imguimanager.hpp"
 
@@ -41,15 +41,19 @@
 #include <set>
 #include <regex>
 
+// renderer apis
+#include "graphics/renderer/sdlrenderer.hpp"
+#include "graphics/renderer/glrenderer.hpp"
+
+#include "graphics/renderer/apitester.hpp"
+
 #include "debug/memmgr.hpp"
 
-// H521
 #undef STB_IMAGE_IMPLEMENTATION
 #undef STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image.h>
 #include "stb_image_write.h"
 
-// H522
 #include <json.hpp>
 
 using namespace PopLib;
@@ -58,13 +62,19 @@ namespace fs = std::filesystem;
 
 AppBase *PopLib::gAppBase = nullptr;
 
+SEHCatcher PopLib::gSEHCatcher;
+
+#ifdef _WIN32
+HMODULE gVersionDLL = NULL;
+#endif
+
 static bool gScreenSaverActive = false;
 
 #ifndef SPI_GETSCREENSAVERRUNNING
 #define SPI_GETSCREENSAVERRUNNING 114
 #endif
 
-static SDLImage *gFPSImage = nullptr;
+static GPUImage *gFPSImage = nullptr;
 
 AppBase::AppBase()
 {
@@ -84,11 +94,13 @@ AppBase::AppBase()
 	mOnlyAllowOneCopyToRun = true;
 #endif
 
+#ifdef _WIN32
 	// Extract product version
-	// char aPath[_MAX_PATH];
-	// GetModuleFileNameA(nullptr, aPath, 256);
-	// mProductVersion = GetProductVersion(aPath);
-	// mChangeDirTo = GetFileDir(aPath);
+	char aPath[_MAX_PATH];
+	GetModuleFileNameA(nullptr, aPath, 256);
+	mProductVersion = GetProductVersion(aPath);
+	mChangeDirTo = GetFileDir(aPath);
+#endif
 
 	mNoDefer = false;
 	mFullScreenPageFlip = true; // should we page flip in fullscreen?
@@ -108,9 +120,8 @@ AppBase::AppBase()
 	mPreferredY = -1;
 	mIsScreenSaver = false;
 	mAllowMonitorPowersave = true;
-	mSDLInterface = nullptr;
+	mRenderer = nullptr;
 	mMusicInterface = nullptr;
-	mErrorHandler = nullptr;
 	mIGUIManager = nullptr;
 	mFrameTime = 10;
 	mNonDrawCount = 0;
@@ -131,7 +142,7 @@ AppBase::AppBase()
 	mFastForwardToMarker = false;
 	mFastForwardStep = false;
 	mSoundManager = nullptr;
-	mCursorNum = CURSOR_POINTER;
+	mCursorNum = CursorType::Pointer;
 	mMouseIn = false;
 	mRunning = false;
 	mActive = true;
@@ -145,7 +156,6 @@ AppBase::AppBase()
 	mLoadingThreadStarted = false;
 	mAutoStartLoadingThread = true;
 	mLoadingThreadCompleted = false;
-	mCursorThreadRunning = false;
 	mNumLoadingThreadTasks = 0;
 	mCompletedLoadingThreadTasks = 0;
 	mLastDrawTick = SDL_GetTicks();
@@ -190,6 +200,7 @@ AppBase::AppBase()
 	mDebugKeysEnabled = false;
 	mNoSoundNeeded = false;
 
+	mRendererAPI = Renderers::OpenGL;
 	mSyncRefreshRate = 100;
 	mVSyncUpdates = false;
 	mVSyncBroken = false;
@@ -209,9 +220,12 @@ AppBase::AppBase()
 	mWindowAspect.Set(4, 3);
 	mIsWideWindow = false;
 
+	m_pScriptingBase = nullptr;
+
 	int i;
 
-	for (i = 0; i < NUM_CURSORS; i++)
+	using underlying = std::underlying_type_t<CursorType>;
+	for (underlying i = 0; i < static_cast<underlying>(CursorType::Last); i++)
 		mCursorImages[i] = nullptr;
 
 	for (i = 0; i < 256; i++)
@@ -247,12 +261,14 @@ AppBase::AppBase()
 	else*/
 	mTabletPC = false;
 
+	gSEHCatcher.mApp = this;
+
 	// std::wifstream stringsFile(_wfopen(L".\\properties\\fstrings", L"rb"));
 	//
 	// if(!stringsFile)
 	//{
 	//	MessageBox(nullptr, "file missing: 'install-folder\\properties\\fstrings' Please re-install", "FATAL ERROR",
-	//MB_OK); 	DoExit(1);
+	// MB_OK); 	DoExit(1);
 	// }
 	// std::getline(stringsFile, mString_HardwareAccelSwitchedOn);
 	// std::getline(stringsFile, mString_HardwareAccelConfirm);
@@ -272,87 +288,14 @@ AppBase::AppBase()
 	// stringsFile.close();
 }
 
-namespace PopLib {
-    extern bool gSDLInterfacePreDrawError;
+namespace PopLib
+{
+extern bool gInterfacePreDrawError;
 }
 
 AppBase::~AppBase()
 {
 	Shutdown();
-
-	// Check if we should write the current 3d setting
-	bool showedMsgBox = false;
-	if (mUserChanged3DSetting)
-	{
-		bool writeToRegistry = true;
-		bool is3D = false;
-		bool is3DOptionSet = RegistryReadBoolean("Is3D", &is3D);
-		if (!is3DOptionSet) // should we write the option?
-		{
-			if (!Is3DAccelerationRecommended()) // may need to prompt user if he wants to keep 3d acceleration on
-			{
-				if (Is3DAccelerated())
-				{
-					showedMsgBox = true;
-					SDL_MessageBoxButtonData buttons[] = {{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes"},
-														  {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No"}};
-
-					std::string aTitle = mCompanyName + " " + GetString("HARDWARE_ACCEL_CONFIRMATION", "Hardware Acceleration Confirmation");
-
-					std::string aMessage = GetString("HARDWARE_ACCEL_SWITCHED_ON",
-								  "Hardware Acceleration was switched on during this session.\n"
-									  "If this resulted in slower performance, it should be switched off.\n"
-										  "Would you like to keep Hardware Acceleration switched on?");
-
-					SDL_MessageBoxData aMessageboxData = {};
-					aMessageboxData.flags = SDL_MESSAGEBOX_INFORMATION;
-					aMessageboxData.title = aTitle.c_str();
-					aMessageboxData.message = aMessage.c_str();
-					aMessageboxData.numbuttons = SDL_arraysize(buttons);
-					aMessageboxData.buttons = buttons;
-					aMessageboxData.window = mSDLInterface->mWindow;
-
-					int aResult;
-					if (!SDL_ShowMessageBox(&aMessageboxData, &aResult))
-					{
-						SDL_Log("Error displaying message box: %s", SDL_GetError());
-					}
-					mSDLInterface->mIs3D = aResult == 1 ? true : false;
-
-					if (aResult != 1)
-						writeToRegistry = false;
-				}
-				else
-					writeToRegistry = false;
-			}
-		}
-
-		if (writeToRegistry)
-			RegistryWriteBoolean("Is3D", mSDLInterface->mIs3D);
-	}
-
-	if (!showedMsgBox && PopLib::gSDLInterfacePreDrawError && !IsScreenSaver())
-	{
-		const SDL_MessageBoxButtonData buttons[] = {
-			{0, 0, "No"},
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes"},
-		};
-
-		std::string aMessage = GetString("HARDWARE_ACCEL_NOT_WORKING",
-					  "Hardware Acceleration may not have been working correctly during this session.\r\n"
-						  "If you noticed graphics problems, you may want to turn off Hardware Acceleration.\r\n"
-							  "Would you like to keep Hardware Acceleration switched on?");
-
-		std::string aTitle = mCompanyName + " " +
-			GetString("HARDWARE_ACCEL_CONFIRMATION", "Hardware Acceleration Confirmation");
-
-		SDL_MessageBoxData messageBoxData = {
-			SDL_MESSAGEBOX_INFORMATION, nullptr, aTitle.c_str(), aMessage.c_str(), SDL_arraysize(buttons), buttons, nullptr};
-
-		int aResult = mSDLInterface->MakeResultMessageBox(messageBoxData);
-		if (aResult == 0)
-			RegistryWriteBoolean("Is3D", false);
-	}
 
 	DialogMap::iterator aDialogItr = mDialogMap.begin();
 	while (aDialogItr != mDialogMap.end())
@@ -373,25 +316,23 @@ AppBase::~AppBase()
 	while (aSharedImageItr != mSharedImageMap.end())
 	{
 		SharedImage *aSharedImage = &aSharedImageItr->second;
-		DBG_ASSERTE(aSharedImage->mRefCount == 0);
+		ASSERT(aSharedImage->mRefCount == 0);
 		delete aSharedImage->mImage;
 		mSharedImageMap.erase(aSharedImageItr++);
 	}
 
-	delete mSDLInterface;
+	delete mRenderer;
 	delete mMusicInterface;
 	delete mSoundManager;
-	delete mErrorHandler;
 	delete mIGUIManager;
-
-	BASS_Stop();
 
 	WaitForLoadingThread();
 
-	SDL_DestroyCursor(mHandCursor);
-	SDL_DestroyCursor(mDraggingCursor);
-
 	gAppBase = nullptr;
+
+#ifdef _WIN32
+	FreeLibrary(gVersionDLL);
+#endif
 }
 
 void AppBase::ClearUpdateBacklog(bool relaxForASecond)
@@ -416,8 +357,8 @@ bool AppBase::AppCanRestore()
 Dialog *AppBase::NewDialog(int theDialogId, bool isModal, const PopString &theDialogHeader,
 						   const PopString &theDialogLines, const PopString &theDialogFooter, int theButtonMode)
 {
-	Dialog *aDialog =
-		new Dialog(nullptr, nullptr, theDialogId, isModal, theDialogHeader, theDialogLines, theDialogFooter, theButtonMode);
+	Dialog *aDialog = new Dialog(nullptr, nullptr, theDialogId, isModal, theDialogHeader, theDialogLines,
+								 theDialogFooter, theButtonMode);
 	return aDialog;
 }
 
@@ -592,51 +533,56 @@ bool AppBase::OpenURL(const std::string &theURL, bool shutdownOnOpen)
 
 std::string AppBase::GetProductVersion(const std::string &thePath)
 {
-	/*
+#ifdef _WIN32
+	if (gVersionDLL == NULL)
+		gVersionDLL = LoadLibraryA("version.dll");
+
 	// Dynamically Load Version.dll
-	typedef uint32_t (APIENTRY *GetFileVersionInfoSizeFunc)(LPSTR lptstrFilename, LPuint32_t lpdwHandle);
-	typedef BOOL (APIENTRY *GetFileVersionInfoFunc)(LPSTR lptstrFilename, uint32_t dwHandle, uint32_t dwLen, LPVOID lpData);
-	typedef BOOL (APIENTRY *VerQueryValueFunc)(const LPVOID pBlock, LPSTR lpSubBlock, LPVOID * lplpBuffer, PUINT puLen);
+	typedef uint32_t(APIENTRY * GetFileVersionInfoSizeFunc)(LPSTR lptstrFilename, LPDWORD lpdwHandle);
+	typedef BOOL(APIENTRY * GetFileVersionInfoFunc)(LPSTR lptstrFilename, uint32_t dwHandle, uint32_t dwLen,
+													LPVOID lpData);
+	typedef BOOL(APIENTRY * VerQueryValueFunc)(const LPVOID pBlock, LPSTR lpSubBlock, LPVOID *lplpBuffer, PUINT puLen);
 
 	static GetFileVersionInfoSizeFunc aGetFileVersionInfoSizeFunc = nullptr;
 	static GetFileVersionInfoFunc aGetFileVersionInfoFunc = nullptr;
 	static VerQueryValueFunc aVerQueryValueFunc = nullptr;
 
-	if (aGetFileVersionInfoSizeFunc==nullptr)
+	if (aGetFileVersionInfoSizeFunc == nullptr)
 	{
-		aGetFileVersionInfoSizeFunc = (GetFileVersionInfoSizeFunc)GetProcAddress(gVersionDLL,"GetFileVersionInfoSizeA");
-		aGetFileVersionInfoFunc = (GetFileVersionInfoFunc)GetProcAddress(gVersionDLL,"GetFileVersionInfoA");
-		aVerQueryValueFunc = (VerQueryValueFunc)GetProcAddress(gVersionDLL,"VerQueryValueA");
+		aGetFileVersionInfoSizeFunc =
+			(GetFileVersionInfoSizeFunc)GetProcAddress(gVersionDLL, "GetFileVersionInfoSizeA");
+		aGetFileVersionInfoFunc = (GetFileVersionInfoFunc)GetProcAddress(gVersionDLL, "GetFileVersionInfoA");
+		aVerQueryValueFunc = (VerQueryValueFunc)GetProcAddress(gVersionDLL, "VerQueryValueA");
 	}
 
 	// Get Product Version
 	std::string aProductVersion;
 
-	uint aSize = aGetFileVersionInfoSizeFunc((char*) thePath.c_str(), 0);
+	uint aSize = aGetFileVersionInfoSizeFunc((char *)thePath.c_str(), 0);
 	if (aSize > 0)
 	{
-		uchar* aVersionBuffer = new uchar[aSize];
-		aGetFileVersionInfoFunc((char*) thePath.c_str(), 0, aSize, aVersionBuffer);
-		char* aBuffer;
-		if (aVerQueryValueFunc(aVersionBuffer,
-				  "\\StringFileInfo\\040904B0\\ProductVersion",
-				  (void**) &aBuffer,
-				  &aSize))
+		uchar *aVersionBuffer = new uchar[aSize];
+		aGetFileVersionInfoFunc((char *)thePath.c_str(), 0, aSize, aVersionBuffer);
+		char *aBuffer;
+		if (aVerQueryValueFunc(aVersionBuffer, (char *)"\\StringFileInfo\\040904B0\\ProductVersion", (void **)&aBuffer,
+							   &aSize))
 		{
 			aProductVersion = aBuffer;
 		}
-		else if (aVerQueryValueFunc(aVersionBuffer,
-				  "\\StringFileInfo\\040904E4\\ProductVersion",
-				  (void**) &aBuffer,
-				  &aSize))
+		else if (aVerQueryValueFunc(aVersionBuffer, (char *)"\\StringFileInfo\\040904E4\\ProductVersion",
+									(void **)&aBuffer, &aSize))
 		{
 			aProductVersion = aBuffer;
 		}
 
 		delete aVersionBuffer;
 	}
-	*/
-	return "0";
+
+	return aProductVersion;
+#else
+	// @ThePixelMoon: a good substitute
+	return POPLIB_VERSION;
+#endif
 }
 
 void AppBase::WaitForLoadingThread()
@@ -645,13 +591,16 @@ void AppBase::WaitForLoadingThread()
 		SDL_Delay(20);
 }
 
-void AppBase::SetCursorImage(int theCursorNum, Image *theImage)
+void AppBase::SetCursorImage(CursorType theCursorNum, Image *theImage)
 {
-	if ((theCursorNum >= 0) && (theCursorNum < NUM_CURSORS))
-	{
-		mCursorImages[theCursorNum] = theImage;
-		EnforceCursor();
-	}
+    using underlying = std::underlying_type_t<CursorType>;
+
+    if (static_cast<underlying>(theCursorNum) >= 0 &&
+        static_cast<underlying>(theCursorNum) < static_cast<underlying>(CursorType::Last))
+    {
+        mCursorImages[static_cast<underlying>(theCursorNum)] = theImage;
+        EnforceCursor();
+    }
 }
 
 int WriteScreenShotThread(void *theArg)
@@ -700,24 +649,11 @@ void AppBase::TakeScreenshot()
 	filenameStream << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".png";
 	std::filesystem::path filePath = screenshotDir / filenameStream.str();
 
-	SDL_Surface *surface = SDL_RenderReadPixels(mSDLInterface->mRenderer, nullptr);
-	if (!surface)
+	std::unique_ptr<ImageData> image = mRenderer->CaptureFrameBuffer();
+	if (!image)
 		return;
 
-	uint8_t *bgra = static_cast<uint8_t *>(surface->pixels);
-	int size = surface->w * surface->h * 4;
-	std::vector<uint8_t> rgba(size);
-
-	for (int i = 0; i < size; i += 4)
-	{
-		rgba[i + 0] = bgra[i + 2]; // R
-		rgba[i + 1] = bgra[i + 1]; // G
-		rgba[i + 2] = bgra[i + 0]; // B
-		rgba[i + 3] = bgra[i + 3]; // A
-	}
-
-	stbi_write_png(filePath.string().c_str(), surface->w, surface->h, 4, rgba.data(), surface->w * 4);
-	SDL_DestroySurface(surface);
+	stbi_write_png(filePath.string().c_str(), image->width, image->height, 4, image->pixels.data(), image->width * 4);
 }
 
 void AppBase::DumpProgramInfo()
@@ -750,19 +686,17 @@ void AppBase::DumpProgramInfo()
 	anImageLibImage.mHeight = aThumbHeight;
 	anImageLibImage.mBits = new ulong[aThumbWidth * aThumbHeight];
 
-	typedef std::multimap<int, MemoryImage *, std::greater<int>> SortedImageMap;
+	typedef std::multimap<int, GPUImage *, std::greater<int>> SortedImageMap;
 
 	int aTotalMemory = 0;
 
 	SortedImageMap aSortedImageMap;
-	MemoryImageSet::iterator anItr = mMemoryImageSet.begin();
-	while (anItr != mMemoryImageSet.end())
+	GPUImageSet::iterator anItr = mGPUImageSet.begin();
+	while (anItr != mGPUImageSet.end())
 	{
-		MemoryImage *aMemoryImage = *anItr;
+		GPUImage *aGPUImage = *anItr;
 
-		int aNumPixels = aMemoryImage->mWidth * aMemoryImage->mHeight;
-
-		SDLImage *aSDLImage = dynamic_cast<SDLImage *>(aMemoryImage);
+		int aNumPixels = aGPUImage->mWidth * aGPUImage->mHeight;
 
 		int aBitsMemory = 0;
 		int aSurfaceMemory = 0;
@@ -773,37 +707,36 @@ void AppBase::DumpProgramInfo()
 		int aTextureMemory = 0;
 
 		int aMemorySize = 0;
-		if (aMemoryImage->mBits != nullptr)
+		if (aGPUImage->mBits != nullptr)
 			aBitsMemory = aNumPixels * 4;
-		if ((aSDLImage != nullptr) && (aSDLImage->mD3DData != nullptr))
+		if ((aGPUImage != nullptr) && (aGPUImage->mGPUData != nullptr))
 			aSurfaceMemory = aNumPixels * 4; // Assume 32bit screen...
-		if (aMemoryImage->mColorTable != nullptr)
+		if (aGPUImage->mColorTable != nullptr)
 			aPalletizedMemory = aNumPixels + 256 * 4;
-		if (aMemoryImage->mNativeAlphaData != nullptr)
+		if (aGPUImage->mNativeAlphaData != nullptr)
 		{
-			if (aMemoryImage->mColorTable != nullptr)
+			if (aGPUImage->mColorTable != nullptr)
 				aNativeAlphaMemory = 256 * 4;
 			else
 				aNativeAlphaMemory = aNumPixels * 4;
 		}
-		if (aMemoryImage->mRLAlphaData != nullptr)
+		if (aGPUImage->mRLAlphaData != nullptr)
 			aRLAlphaMemory = aNumPixels;
-		if (aMemoryImage->mRLAdditiveData != nullptr)
+		if (aGPUImage->mRLAdditiveData != nullptr)
 			aRLAdditiveMemory = aNumPixels;
-		if (aMemoryImage->mD3DData != nullptr)
-			aTextureMemory += ((SDLTextureData *)aMemoryImage->mD3DData)->GetMemSize();
+		// if (aGPUImage->mGPUData != nullptr)
+		//	aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
 
 		aMemorySize = aBitsMemory + aSurfaceMemory + aPalletizedMemory + aNativeAlphaMemory + aRLAlphaMemory +
 					  aRLAdditiveMemory + aTextureMemory;
 		aTotalMemory += aMemorySize;
 
-		aSortedImageMap.insert(SortedImageMap::value_type(aMemorySize, aMemoryImage));
+		aSortedImageMap.insert(SortedImageMap::value_type(aMemorySize, aGPUImage));
 
 		++anItr;
 	}
 
-	aDumpStream << "Total Image Allocation: " << CommaSeperate(aTotalMemory).c_str()
-				<< " bytes<BR>";
+	aDumpStream << "Total Image Allocation: " << CommaSeperate(aTotalMemory).c_str() << " bytes<BR>";
 	aDumpStream << "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=4>";
 
 	int aTotalMemorySize = 0;
@@ -818,7 +751,7 @@ void AppBase::DumpProgramInfo()
 	SortedImageMap::iterator aSortedItr = aSortedImageMap.begin();
 	while (aSortedItr != aSortedImageMap.end())
 	{
-		MemoryImage *aMemoryImage = aSortedItr->second;
+		GPUImage *aGPUImage = aSortedItr->second;
 
 		char anImageName[256];
 		sprintf(anImageName, "img%04d", anImgNum);
@@ -831,9 +764,7 @@ void AppBase::DumpProgramInfo()
 		aDumpStream << "<TD><A HREF=" << anImageName << ".png><IMG SRC=" << aThumbName << ".jpeg WIDTH=" << aThumbWidth
 					<< " HEIGHT=" << aThumbHeight << "></A></TD>" << std::endl;
 
-		int aNumPixels = aMemoryImage->mWidth * aMemoryImage->mHeight;
-
-		SDLImage *aSDLImage = dynamic_cast<SDLImage *>(aMemoryImage);
+		int aNumPixels = aGPUImage->mWidth * aGPUImage->mHeight;
 
 		int aMemorySize = aSortedItr->first;
 
@@ -846,26 +777,26 @@ void AppBase::DumpProgramInfo()
 		int aTextureMemory = 0;
 		std::string aTextureFormatName;
 
-		if (aMemoryImage->mBits != nullptr)
+		if (aGPUImage->mBits != nullptr)
 			aBitsMemory = aNumPixels * 4;
-		if ((aSDLImage != nullptr) && (aSDLImage->mD3DData != nullptr))
+		if ((aGPUImage != nullptr) && (aGPUImage->mGPUData != nullptr))
 			aSurfaceMemory = aNumPixels * 4; // Assume 32bit screen...
-		if (aMemoryImage->mColorTable != nullptr)
+		if (aGPUImage->mColorTable != nullptr)
 			aPalletizedMemory = aNumPixels + 256 * 4;
-		if (aMemoryImage->mNativeAlphaData != nullptr)
+		if (aGPUImage->mNativeAlphaData != nullptr)
 		{
-			if (aMemoryImage->mColorTable != nullptr)
+			if (aGPUImage->mColorTable != nullptr)
 				aNativeAlphaMemory = 256 * 4;
 			else
 				aNativeAlphaMemory = aNumPixels * 4;
 		}
-		if (aMemoryImage->mRLAlphaData != nullptr)
+		if (aGPUImage->mRLAlphaData != nullptr)
 			aRLAlphaMemory = aNumPixels;
-		if (aMemoryImage->mRLAdditiveData != nullptr)
+		if (aGPUImage->mRLAdditiveData != nullptr)
 			aRLAdditiveMemory = aNumPixels;
-		if (aMemoryImage->mD3DData != nullptr)
+		if (aGPUImage->mGPUData != nullptr)
 		{
-			aTextureMemory += ((SDLTextureData *)aMemoryImage->mD3DData)->GetMemSize();
+			// aTextureMemory += ((SDLTextureData *)aGPUImage->mGPUData)->GetMemSize();
 
 			aTextureFormatName = "ARGB8888"; // They are always like this
 		}
@@ -880,76 +811,59 @@ void AppBase::DumpProgramInfo()
 		aTotalRLAdditiveMemory += aRLAdditiveMemory;
 
 		char aStr[256];
-		sprintf(aStr, "%d x %d<BR>%s bytes", aMemoryImage->mWidth, aMemoryImage->mHeight,
-				CommaSeperate(aMemorySize).c_str());
+		sprintf(aStr, "%d x %d<BR>%s bytes", aGPUImage->mWidth, aGPUImage->mHeight, CommaSeperate(aMemorySize).c_str());
 		aDumpStream << "<TD ALIGN=RIGHT>" << aStr << "</TD>" << std::endl;
 
+		aDumpStream << "<TD>" << ((aBitsMemory != 0) ? "mBits<BR>" + CommaSeperate(aBitsMemory) : "&nbsp;") << "</TD>"
+					<< std::endl;
 		aDumpStream << "<TD>"
-					<< ((aBitsMemory != 0) ? "mBits<BR>" + CommaSeperate(aBitsMemory) : "&nbsp;")
+					<< ((aPalletizedMemory != 0) ? "Palletized<BR>" + CommaSeperate(aPalletizedMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<< ((aPalletizedMemory != 0)
-							? "Palletized<BR>" + CommaSeperate(aPalletizedMemory)
-							: "&nbsp;")
-					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<< ((aSurfaceMemory != 0)
-							? "DDSurface<BR>" + CommaSeperate(aSurfaceMemory)
-							: "&nbsp;")
+		aDumpStream << "<TD>" << ((aSurfaceMemory != 0) ? "DDSurface<BR>" + CommaSeperate(aSurfaceMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
 
 		aDumpStream << "<TD>"
-					<< ((aMemoryImage->mD3DData != nullptr)
+					<< ((aGPUImage->mGPUData != nullptr)
 							? "Texture<BR>" + aTextureFormatName + "<BR>" + CommaSeperate(aTextureMemory)
 							: "&nbsp;")
 					<< "</TD>" << std::endl;
 
-		aDumpStream << "<TD>"
-					<< (aMemoryImage->mIsVolatile ? "Volatile" : "&nbsp;")
-					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << (aGPUImage->mIsVolatile ? "Volatile" : "&nbsp;") << "</TD>" << std::endl;
 
-		aDumpStream << "<TD>"
-					<< (aMemoryImage->mForcedMode ? "Forced" : "&nbsp;")
-					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << (aGPUImage->mForcedMode ? "Forced" : "&nbsp;") << "</TD>" << std::endl;
 
-		aDumpStream << "<TD>"
-					<< (aMemoryImage->mHasAlpha ? "HasAlpha" : "&nbsp;")
-					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << (aGPUImage->mHasAlpha ? "HasAlpha" : "&nbsp;") << "</TD>" << std::endl;
 
+		aDumpStream << "<TD>" << (aGPUImage->mHasTrans ? "HasTrans" : "&nbsp;") << "</TD>" << std::endl;
 		aDumpStream << "<TD>"
-					<< (aMemoryImage->mHasTrans ? "HasTrans" : "&nbsp;")
+					<< ((aNativeAlphaMemory != 0) ? "NativeAlpha<BR>" + CommaSeperate(aNativeAlphaMemory) : "&nbsp;")
+					<< "</TD>" << std::endl;
+		aDumpStream << "<TD>" << ((aRLAlphaMemory != 0) ? "RLAlpha<BR>" + CommaSeperate(aRLAlphaMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
 		aDumpStream << "<TD>"
-					<< ((aNativeAlphaMemory != 0) ? "NativeAlpha<BR>" + CommaSeperate(aNativeAlphaMemory) :"&nbsp;")
+					<< ((aRLAdditiveMemory != 0) ? "RLAdditive<BR>" + CommaSeperate(aRLAdditiveMemory) : "&nbsp;")
 					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<<((aRLAlphaMemory != 0) ? "RLAlpha<BR>" + CommaSeperate(aRLAlphaMemory) : "&nbsp;")
-					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>"
-					<< ((aRLAdditiveMemory != 0)
-											  ? "RLAdditive<BR>" + CommaSeperate(aRLAdditiveMemory)
-											  : "&nbsp;")
-					<< "</TD>" << std::endl;
-		aDumpStream << "<TD>" << (aMemoryImage->mFilePath.empty() ? "&nbsp;" : aMemoryImage->mFilePath) << "</TD>"
+		aDumpStream << "<TD>" << (aGPUImage->mFilePath.empty() ? "&nbsp;" : aGPUImage->mFilePath) << "</TD>"
 					<< std::endl;
 
 		aDumpStream << "</TR>" << std::endl;
 
 		// Write thumb
 
-		MemoryImage aCopiedImage(*aMemoryImage);
+		// Use the existing GPUImage pointer directly instead of copying
+		GPUImage *aCopiedImage = aGPUImage;
 
-		ulong *aBits = aCopiedImage.GetBits();
+		ulong *aBits = aCopiedImage->GetBits();
 
 		uint32_t *aThumbBitsPtr = (uint32_t *)anImageLibImage.mBits;
 
 		for (int aThumbY = 0; aThumbY < aThumbHeight; aThumbY++)
 			for (int aThumbX = 0; aThumbX < aThumbWidth; aThumbX++)
 			{
-				int aSrcX = (int)(aCopiedImage.mWidth * (aThumbX + 0.5)) / aThumbWidth;
-				int aSrcY = (int)(aCopiedImage.mHeight * (aThumbY + 0.5)) / aThumbHeight;
+				int aSrcX = (int)(aCopiedImage->mWidth * (aThumbX + 0.5)) / aThumbWidth;
+				int aSrcY = (int)(aCopiedImage->mHeight * (aThumbY + 0.5)) / aThumbHeight;
 
-				*(aThumbBitsPtr++) = aBits[aSrcX + (aSrcY * aCopiedImage.mWidth)];
+				*(aThumbBitsPtr++) = aBits[aSrcX + (aSrcY * aCopiedImage->mWidth)];
 			}
 
 		ImageLib::WriteImage((GetAppDataFolder() + std::string("_dump/") + aThumbName).c_str(), ".jpeg",
@@ -958,9 +872,9 @@ void AppBase::DumpProgramInfo()
 		// Write high resolution image
 
 		ImageLib::Image anFullImage;
-		anFullImage.mBits = aCopiedImage.GetBits();
-		anFullImage.mWidth = aCopiedImage.GetWidth();
-		anFullImage.mHeight = aCopiedImage.GetHeight();
+		anFullImage.mBits = aCopiedImage->GetBits();
+		anFullImage.mWidth = aCopiedImage->GetWidth();
+		anFullImage.mHeight = aCopiedImage->GetHeight();
 
 		ImageLib::WriteImage((GetAppDataFolder() + std::string("_dump/") + anImageName).c_str(), ".png", &anFullImage);
 
@@ -1000,12 +914,12 @@ double AppBase::GetLoadingThreadProgress()
 	return std::min(mCompletedLoadingThreadTasks / (double)mNumLoadingThreadTasks, 1.0);
 }
 
-bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType, const uchar *theValue, ulong theLength)
+bool AppBase::RegistryWrite(const std::string &theValueName, JSONRegistryType theType, const uchar *theValue, ulong theLength)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path config = GetAppDataFolder() + mRegKey + "/registry.json"; // always registry.json
 	std::filesystem::create_directories(config.parent_path());
-	//SDL_Log("%s", config.string().c_str());
+	// LOG_INFO("%s", config.string().c_str());
 
 	nlohmann::json j;
 	std::ifstream inFile(config);
@@ -1022,18 +936,19 @@ bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType,
 
 	switch (theType)
 	{
-	case JSON_STRING:
+	case JSONRegistryType::String:
 		j[theValueName] = std::string(reinterpret_cast<const char *>(theValue), theLength);
 		break;
-	case JSON_INTEGER:
+	case JSONRegistryType::Integer:
 		if (theLength == sizeof(int))
 			j[theValueName] = *reinterpret_cast<const int *>(theValue);
 		break;
-	case JSON_BOOLEAN:
+	case JSONRegistryType::Bool:
 		if (theLength == sizeof(int))
 			j[theValueName] = (*reinterpret_cast<const int *>(theValue)) != 0;
 		break;
-	case JSON_DATA: {
+	case JSONRegistryType::Data:
+	{
 		std::vector<uchar> bin(theValue, theValue + theLength);
 		j[theValueName] = bin;
 		break;
@@ -1051,23 +966,23 @@ bool AppBase::RegistryWrite(const std::string &theValueName, JSON_RTYPE theType,
 
 bool AppBase::RegistryWriteString(const std::string &theValueName, const std::string &theString)
 {
-	return RegistryWrite(theValueName, JSON_STRING, (uchar *)theString.c_str(), theString.length());
+	return RegistryWrite(theValueName, JSONRegistryType::String, (uchar *)theString.c_str(), theString.length());
 }
 
 bool AppBase::RegistryWriteInteger(const std::string &theValueName, int theValue)
 {
-	return RegistryWrite(theValueName, JSON_INTEGER, (uchar *)&theValue, sizeof(int));
+	return RegistryWrite(theValueName, JSONRegistryType::Integer, (uchar *)&theValue, sizeof(int));
 }
 
 bool AppBase::RegistryWriteBoolean(const std::string &theValueName, bool theValue)
 {
 	int aValue = theValue ? 1 : 0;
-	return RegistryWrite(theValueName, JSON_BOOLEAN, (uchar *)&aValue, sizeof(int));
+	return RegistryWrite(theValueName, JSONRegistryType::Bool, (uchar *)&aValue, sizeof(int));
 }
 
 bool AppBase::RegistryWriteData(const std::string &theValueName, const uchar *theValue, ulong theLength)
 {
-	return RegistryWrite(theValueName, JSON_DATA, (uchar *)theValue, theLength);
+	return RegistryWrite(theValueName, JSONRegistryType::Data, (uchar *)theValue, theLength);
 }
 
 void AppBase::WriteToRegistry()
@@ -1100,7 +1015,7 @@ bool AppBase::RegistryEraseKey(const PopString &_theKeyName)
 
 void AppBase::RegistryEraseValue(const PopString &_theValueName)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path configPath = GetAppDataFolder() + mRegKey + "/registry.json";
 	std::string keyName = _theValueName;
 
@@ -1138,15 +1053,15 @@ bool AppBase::RegistryGetSubKeys(const std::string &theKeyName, StringVector *th
 	return false;
 }
 
-bool AppBase::RegistryRead(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength)
+bool AppBase::RegistryRead(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength)
 {
 	return RegistryReadKey(theValueName, theType, theValue, theLength, 0);
 }
 
-bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theType, uchar *theValue, ulong *theLength,
+bool AppBase::RegistryReadKey(const std::string &theValueName, JSONRegistryType *theType, uchar *theValue, ulong *theLength,
 							  ulong theKey)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path configPath = GetAppDataFolder() + mRegKey + "/registry.json";
 	if (!std::filesystem::exists(configPath) || !theType || !theValue || !theLength)
 		return false;
@@ -1168,7 +1083,7 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		return false;
 
 	auto &entry = j[theValueName];
-	// JSON_STRING
+	// JSONRegistryType::String
 	if (entry.is_string())
 	{
 		std::string s = entry.get<std::string>();
@@ -1176,10 +1091,10 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 			return false;
 		std::memcpy(theValue, s.data(), s.size());
 		*theLength = static_cast<ulong>(s.size());
-		*theType = JSON_STRING;
+		*theType = JSONRegistryType::String;
 		return true;
 	}
-	// JSON_INTEGER
+	// JSONRegistryType::Integer
 	else if (entry.is_number_integer())
 	{
 		if (*theLength < sizeof(int))
@@ -1187,10 +1102,10 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		int v = entry.get<int>();
 		std::memcpy(theValue, &v, sizeof(int));
 		*theLength = sizeof(int);
-		*theType = JSON_INTEGER;
+		*theType = JSONRegistryType::Integer;
 		return true;
 	}
-	// JSON_BOOLEAN
+	// JSONRegistryType::Bool
 	else if (entry.is_boolean())
 	{
 		if (*theLength < sizeof(int))
@@ -1198,10 +1113,10 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		int b = entry.get<bool>() ? 1 : 0;
 		std::memcpy(theValue, &b, sizeof(int));
 		*theLength = sizeof(int);
-		*theType = JSON_BOOLEAN;
+		*theType = JSONRegistryType::Bool;
 		return true;
 	}
-	// JSON_DATA
+	// JSONRegistryType::Data
 	else if (entry.is_array())
 	{
 		size_t size = entry.size();
@@ -1210,7 +1125,7 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 		for (size_t i = 0; i < size; ++i)
 			theValue[i] = static_cast<uchar>(entry[i].get<int>());
 		*theLength = static_cast<ulong>(size);
-		*theType = JSON_DATA;
+		*theType = JSONRegistryType::Data;
 		return true;
 	}
 
@@ -1219,7 +1134,7 @@ bool AppBase::RegistryReadKey(const std::string &theValueName, JSON_RTYPE *theTy
 
 bool AppBase::RegistryReadString(const std::string &theKey, std::string *theString)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	std::filesystem::path configPath = GetAppDataFolder() + mRegKey + "/registry.json";
 	if (!std::filesystem::exists(configPath) || !theString)
 		return false;
@@ -1247,7 +1162,7 @@ bool AppBase::RegistryReadString(const std::string &theKey, std::string *theStri
 
 bool AppBase::RegistryReadInteger(const std::string &theKey, int *theValue)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	if (!theValue)
 		return false;
 
@@ -1277,7 +1192,7 @@ bool AppBase::RegistryReadInteger(const std::string &theKey, int *theValue)
 
 bool AppBase::RegistryReadBoolean(const std::string &theKey, bool *theValue)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	if (!theValue)
 		return false;
 
@@ -1305,7 +1220,7 @@ bool AppBase::RegistryReadBoolean(const std::string &theKey, bool *theValue)
 
 bool AppBase::RegistryReadData(const std::string &theKey, uchar *theValue, ulong *theLength)
 {
-	// H522
+	// the Windows(TM) registry isn't available in linux, we use json!!!
 	if (!theValue || !theLength)
 		return false;
 
@@ -1448,7 +1363,7 @@ std::string AppBase::GetGameSEHInfo()
 	sprintf(aTimeStr, "%02d:%02d:%02d", (aSecLoaded / 60 / 60), (aSecLoaded / 60) % 60, aSecLoaded % 60);
 
 	char aThreadIdStr[16];
-	sprintf(aThreadIdStr, "%X", mPrimaryThreadId);
+	sprintf(aThreadIdStr, "%lX", mPrimaryThreadId);
 
 	std::string anInfoString = "Product: " + mProdName + "\r\n" + "Version: " + mProductVersion + "\r\n";
 
@@ -1473,6 +1388,9 @@ void AppBase::ShutdownHook()
 
 void AppBase::Shutdown()
 {
+	if (m_pScriptingBase)
+		m_pScriptingBase->Shutdown();
+
 	if ((mPrimaryThreadId != 0) && (SDL_GetCurrentThreadID() != mPrimaryThreadId))
 	{
 		mLoadingFailed = true;
@@ -1483,11 +1401,8 @@ void AppBase::Shutdown()
 		mShutdown = true;
 		ShutdownHook();
 
-		// Blah
-		while (mCursorThreadRunning)
-		{
-			SDL_Delay(10);
-		}
+		if (mWindow)
+			SDL_DestroyWindow(mWindow);
 
 		if (mMusicInterface != nullptr)
 			mMusicInterface->StopAllMusic();
@@ -1569,7 +1484,7 @@ void AppBase::Redraw(Rect *theClipRect)
 	if (gScreenSaverActive)
 		return;
 
-	mSDLInterface->Redraw(theClipRect);
+	mRenderer->Redraw(theClipRect);
 
 	mFPSFlipCount++;
 }
@@ -1589,7 +1504,7 @@ static void CalculateFPS()
 	static SysFont aFont(gAppBase, LiberationSans_Regular, LiberationSans_Regular_Size, 8);
 	if (gFPSImage == nullptr)
 	{
-		gFPSImage = new SDLImage(gAppBase->mSDLInterface);
+		gFPSImage = gAppBase->mRenderer->NewGPUImage();
 		gFPSImage->Create(50, aFont.GetHeight() + 4);
 		gFPSImage->SetImageMode(false, false);
 		gFPSImage->SetVolatile(true);
@@ -1631,7 +1546,7 @@ static void FPSDrawCoords(int theX, int theY)
 	static SysFont aFont(gAppBase, LiberationSans_Regular, LiberationSans_Regular_Size, 8);
 	if (gFPSImage == nullptr)
 	{
-		gFPSImage = new SDLImage(gAppBase->mSDLInterface);
+		gFPSImage = gAppBase->mRenderer->NewGPUImage();
 		gFPSImage->Create(50, aFont.GetHeight() + 4);
 		gFPSImage->SetImageMode(false, false);
 		gFPSImage->SetVolatile(true);
@@ -1720,15 +1635,15 @@ bool AppBase::DrawDirtyStuff()
 
 		if (mShowFPS)
 		{
-			Graphics g(mSDLInterface->GetScreenImage());
+			Graphics g(mRenderer->GetScreenImage());
 			g.DrawImage(gFPSImage, mWidth - gFPSImage->GetWidth() - 10, mHeight - gFPSImage->GetHeight() - 10);
 		}
 
 		if (mWaitForVSync && mIsPhysWindowed && mSoftVSyncWait)
 		{
 			uint32_t aTick = SDL_GetTicks();
-			if (aTick - mLastDrawTick < mSDLInterface->mMillisecondsPerFrame)
-				SDL_Delay(mSDLInterface->mMillisecondsPerFrame - (aTick - mLastDrawTick));
+			if (aTick - mLastDrawTick < mRenderer->mMillisecondsPerFrame)
+				SDL_Delay(mRenderer->mMillisecondsPerFrame - (aTick - mLastDrawTick));
 		}
 
 		uint32_t aPreScreenBltTime = SDL_GetTicks();
@@ -1804,11 +1719,11 @@ void AppBase::LogScreenSaverError(const std::string &theError)
 #ifdef _WIN32
 		fprintf(aFile, "%s %s %u\n", theError.c_str(), _strtime(aBuf), SDL_GetTicks());
 #else
-		char aBuf[9];  // HH:MM:SS
+		char aBuf[9]; // HH:MM:SS
 		time_t now = time(nullptr);
 		strftime(aBuf, sizeof(aBuf), "%H:%M:%S", localtime(&now));
 
-		fprintf(aFile, "%s %s %u\n", theError.c_str(), aBuf, SDL_GetTicks());
+		fprintf(aFile, "%s %s %lu\n", theError.c_str(), aBuf, SDL_GetTicks());
 #endif
 		fclose(aFile);
 	}
@@ -1816,14 +1731,6 @@ void AppBase::LogScreenSaverError(const std::string &theError)
 
 void AppBase::BeginPopup()
 {
-	// if (!mIsPhysWindowed)
-	//{
-	// if (mSDLInterface && mDDInterface->mDD)
-	//{
-	// mDDInterface->mDD->FlipToGDISurface();
-	// mNoDefer = true;
-	//}
-	//}
 }
 
 void AppBase::EndPopup()
@@ -1837,7 +1744,7 @@ void AppBase::EndPopup()
 	if (mWidgetManager->mDownButtons)
 	{
 		mWidgetManager->DoMouseUps();
-//		ReleaseCapture();
+		//		ReleaseCapture();
 	}
 }
 
@@ -1849,68 +1756,14 @@ int AppBase::MsgBox(const std::string &theText, const std::string &theTitle, int
 		return 0;
 	}
 
-	SDL_MessageBoxData messageBoxData = {
-		SDL_MESSAGEBOX_INFORMATION, NULL, theTitle.c_str(), theText.c_str(), NULL, NULL, NULL};
-
-	if (theFlags & MsgBoxFlags::MsgBox_OK)
-	{
-		SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "OK"},
-		};
-
-		messageBoxData.numbuttons = SDL_arraysize(buttons);
-		messageBoxData.buttons = buttons;
-	}
-	else if (theFlags & MsgBoxFlags::MsgBox_OKCANCEL)
-	{
-		SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "OK"},
-			{SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Cancel"},
-		};
-		messageBoxData.numbuttons = SDL_arraysize(buttons);
-		messageBoxData.buttons = buttons;
-	}
-	else if (theFlags & MsgBoxFlags::MsgBox_ABORTRETRYIGNORE)
-	{
-		SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Abort"},
-			{SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Retry"},
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "Ignore"},
-		};
-		messageBoxData.numbuttons = SDL_arraysize(buttons);
-		messageBoxData.buttons = buttons;
-	}
-	else if (theFlags & MsgBoxFlags::MsgBox_YESNOCANCEL)
-	{
-		SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Yes"},
-			{0, 1, "No"},
-			{SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Cancel"},
-		};
-		messageBoxData.numbuttons = SDL_arraysize(buttons);
-		messageBoxData.buttons = buttons;
-	}
-	else if (theFlags & MsgBoxFlags::MsgBox_YESNO)
-	{
-		SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Yes"},
-			{SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "No"},
-		};
-		messageBoxData.numbuttons = SDL_arraysize(buttons);
-		messageBoxData.buttons = buttons;
-	}
-	else if (theFlags & MsgBoxFlags::MsgBox_RETRYCANCEL)
-	{
-		SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Retry"},
-			{SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Cancel"},
-		};
-		messageBoxData.numbuttons = SDL_arraysize(buttons);
-		messageBoxData.buttons = buttons;
-	}
+	MsgBoxData msgBoxData;
+	msgBoxData.mFlags = static_cast<MsgBoxFlags>(theFlags);
+	msgBoxData.mTitle = theTitle.c_str();
+	msgBoxData.mMessage = theText.c_str();
 
 	BeginPopup();
-	int aResult = mSDLInterface->MakeResultMessageBox(messageBoxData);
+	int aResult;
+	SDL_ShowMessageBox(reinterpret_cast<const SDL_MessageBoxData *>(&msgBoxData), &aResult);
 	EndPopup();
 
 	return aResult;
@@ -1926,8 +1779,9 @@ void AppBase::Popup(const std::string &theString)
 
 	BeginPopup();
 	if (!mShutdown)
-		mSDLInterface->MakeSimpleMessageBox(GetString("FATAL_ERROR", "FATAL ERROR").c_str(),
-											theString.c_str(), SDL_MESSAGEBOX_ERROR);
+		SDL_ShowSimpleMessageBox(static_cast<SDL_MessageBoxFlags>(MsgBox_OK),
+								 GetString("FATAL_ERROR", "FATAL ERROR").c_str(), theString.c_str(), mWindow);
+
 	EndPopup();
 }
 
@@ -1967,7 +1821,7 @@ void AppBase::RehupFocus()
 			mWidgetManager->LostFocus();
 			LostFocus();
 
-//			ReleaseCapture();
+			//			ReleaseCapture();
 			mWidgetManager->DoMouseUps();
 		}
 	}
@@ -1998,17 +1852,17 @@ void AppBase::ShowMemoryUsage()
 		mDDInterface->mDD7->GetAvailableVidMem(&aCaps,&aTotal,&aFree);
 	}
 
-	MemoryImageSet::iterator anItr = mMemoryImageSet.begin();
+	GPUImageSet::iterator anItr = mGPUImageSet.begin();
 	typedef std::pair<int,int> FormatUsage;
 	typedef std::map<PixelFormat,FormatUsage> FormatMap;
 	FormatMap aFormatMap;
 	int aTextureMemory = 0;
-	while (anItr != mMemoryImageSet.end())
+	while (anItr != mGPUImageSet.end())
 	{
-		MemoryImage* aMemoryImage = *anItr;
-		if (aMemoryImage->mD3DData != nullptr)
+		GPUImage* aGPUImage = *anItr;
+		if (aGPUImage->mGPUData != nullptr)
 		{
-			TextureData *aData = (TextureData*)aMemoryImage->mD3DData;
+			TextureData *aData = (TextureData*)aGPUImage->mGPUData;
 			aTextureMemory += aData->mTexMemSize;
 
 			FormatUsage &aUsage = aFormatMap[aData->mPixelFormat];
@@ -2031,7 +1885,7 @@ void AppBase::ShowMemoryUsage()
 
 	aStr += StrFormat("3D-Mode is %s (3D is %s on this system)\r\n\r\n",Is3DAccelerated()?"On":"Off",aDesc);
 
-	aStr += StrFormat("Num Images: %d\r\n",(int)mMemoryImageSet.size());
+	aStr += StrFormat("Num Images: %d\r\n",(int)mGPUImageSet.size());
 	aStr += StrFormat("Num Sounds: %d\r\n",mSoundManager->GetNumSounds());
 	aStr += StrFormat("Video Memory: %s/%s KB\r\n", PopStringToString(CommaSeperate((aTotal-aFree)/1024)).c_str(),
 	PopStringToString(CommaSeperate(aTotal/1024)).c_str()); aStr += StrFormat("Texture Memory: %s
@@ -2205,12 +2059,15 @@ bool AppBase::ProcessDeferredMessages(bool singleMessage)
 			Shutdown();
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_GAINED:
-			mActive = true;
-			RehupFocus();
-			if (!mIsWindowed)
-				mWidgetManager->MarkAllDirty();
-			if (mIsOpeningURL && !mActive)
-				URLOpenSucceeded(mOpeningURL);
+			if ((!gInAssert) && (!mSEHOccured) && (!mShutdown))
+			{
+				mActive = true;
+				RehupFocus();
+				if (!mIsWindowed)
+					mWidgetManager->MarkAllDirty();
+				if (mIsOpeningURL && !mActive)
+					URLOpenSucceeded(mOpeningURL);
+			}
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_LOST:
 			mActive = false;
@@ -2268,7 +2125,7 @@ bool AppBase::ProcessDeferredMessages(bool singleMessage)
 				int y = event.button.y;
 
 				int renderWidth, renderHeight;
-				SDL_GetCurrentRenderOutputSize(mSDLInterface->mRenderer, &renderWidth, &renderHeight);
+				mRenderer->GetOutputSize(&renderWidth, &renderHeight);
 
 				int scaledX = static_cast<int>(event.button.x * ((float)mWidth / renderWidth));
 				int scaledY = static_cast<int>(event.button.y * ((float)mHeight / renderHeight));
@@ -2325,9 +2182,54 @@ std::string AppBase::NotifyCrashHook()
 
 void AppBase::MakeWindow()
 {
-	if (mSDLInterface == nullptr)
+	int aWindowFlags = mIsWindowed ? 0 : SDL_WINDOW_FULLSCREEN;
+
+	std::string fullTitle = mTitle.c_str();
+	switch (mRendererAPI)
 	{
-		mSDLInterface = new SDLInterface(this);
+		case Renderers::SDL:
+			fullTitle += " | SDL";
+			break;
+		case Renderers::OpenGL:
+			fullTitle += " | OpenGL";
+			break;
+		default:
+			break;
+	}
+
+	mWindow = SDL_CreateWindow(fullTitle.c_str(), mWidth, mHeight, aWindowFlags | SDL_WINDOW_OPENGL);
+	if (mWindow == nullptr)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Window Creation Failed", SDL_GetError(), nullptr);
+		Shutdown();
+		return;
+	}
+
+	if (!mIsWindowed)
+		SDL_SetWindowFullscreen(mWindow, true);
+
+	SDL_StartTextInput(mWindow);
+
+	if (!mRenderer)
+	{
+		//-- rendering
+		switch (mRendererAPI)
+		{
+		case Renderers::SDL: {
+			mRenderer = new SDLRenderer(this);
+			break;
+		}
+		case Renderers::OpenGL: {
+			mRenderer = new GLRenderer(this);
+			break;
+		}
+		default: {
+			// well, if we don't have a specified renderer then do SDL
+			mRenderer = new SDLRenderer(this);
+			break;
+		}
+		}
+		//-- end rendering
 
 		// Enable 3d setting
 		bool is3D = false;
@@ -2343,11 +2245,17 @@ void AppBase::MakeWindow()
 			if (is3D)
 				mTest3D = true;
 
-			mSDLInterface->mIs3D = is3D;
+			mRenderer->mIs3D = is3D;
 		}
 	}
 
-	int aResult = InitSDLInterface();
+	if (!m_pScriptingBase)
+	{
+		m_pScriptingBase = new ScriptingBase();
+		m_pScriptingBase->Initialize();
+	}
+
+	int aResult = InitInterface();
 
 	bool isActive = mActive;
 	// mActive = GetActiveWindow() == mHWnd;
@@ -2368,42 +2276,58 @@ void AppBase::MakeWindow()
 
 	ReInitImages();
 
-	mWidgetManager->mImage = mSDLInterface->GetScreenImage();
+	mWidgetManager->mImage = mRenderer->GetScreenImage();
 	mWidgetManager->MarkAllDirty();
 
 	//	SetTimer(mHWnd, 100, mFrameTime, nullptr);
 }
 
+bool AppBase::UpdateWindowIcon(Image *theImage)
+{
+	if (theImage != nullptr)
+	{
+		SDL_Surface *aSurface =
+			SDL_CreateSurfaceFrom(theImage->mWidth, theImage->mHeight, SDL_PIXELFORMAT_ARGB8888,
+								  ((MemoryImage *)theImage)->GetBits(), theImage->mWidth * sizeof(ulong));
+
+		SDL_SetWindowIcon(mWindow, aSurface);
+
+		SDL_DestroySurface(aSurface);
+		return true;
+	}
+	return false;
+}
+
 void AppBase::DeleteNativeImageData()
 {
-	MemoryImageSet::iterator anItr = mMemoryImageSet.begin();
-	while (anItr != mMemoryImageSet.end())
+	GPUImageSet::iterator anItr = mGPUImageSet.begin();
+	while (anItr != mGPUImageSet.end())
 	{
-		MemoryImage *aMemoryImage = *anItr;
-		aMemoryImage->DeleteNativeData();
+		GPUImage *aGPUImage = *anItr;
+		aGPUImage->DeleteNativeData();
 		++anItr;
 	}
 }
 
 void AppBase::DeleteExtraImageData()
 {
-	AutoCrit anAutoCrit(mSDLInterface->mCritSect);
-	MemoryImageSet::iterator anItr = mMemoryImageSet.begin();
-	while (anItr != mMemoryImageSet.end())
+	AutoCrit anAutoCrit(mRenderer->mCritSect);
+	GPUImageSet::iterator anItr = mGPUImageSet.begin();
+	while (anItr != mGPUImageSet.end())
 	{
-		MemoryImage *aMemoryImage = *anItr;
-		aMemoryImage->DeleteExtraBuffers();
+		GPUImage *aGPUImage = *anItr;
+		aGPUImage->DeleteExtraBuffers();
 		++anItr;
 	}
 }
 
 void AppBase::ReInitImages()
 {
-	MemoryImageSet::iterator anItr = mMemoryImageSet.begin();
-	while (anItr != mMemoryImageSet.end())
+	GPUImageSet::iterator anItr = mGPUImageSet.begin();
+	while (anItr != mGPUImageSet.end())
 	{
-		MemoryImage *aMemoryImage = *anItr;
-		aMemoryImage->ReInit();
+		GPUImage *aGPUImage = *anItr;
+		aGPUImage->ReInit();
 		++anItr;
 	}
 }
@@ -2423,8 +2347,8 @@ int AppBase::LoadingThreadProcStub(void *theArg)
 	aPopLibApp->LoadingThreadProc();
 
 	char aStr[256];
-	sprintf(aStr, "Resource Loading Time: %d\r\n", (SDL_GetTicks() - aPopLibApp->mTimeLoaded));
-	SDL_Log(aStr);
+	sprintf(aStr, "Resource Loading Time: %lu\n", (SDL_GetTicks() - aPopLibApp->mTimeLoaded));
+	LOG_INFO("%s", aStr);
 
 	aPopLibApp->mLoadingThreadCompleted = true;
 
@@ -2439,71 +2363,6 @@ void AppBase::StartLoadingThread()
 		SDL_SetCurrentThreadPriority(SDL_THREAD_PRIORITY_HIGH);
 		mLoadingThreadStarted = true;
 		SDL_Thread *aThread = SDL_CreateThread(LoadingThreadProcStub, "LoadingThread", (void *)this);
-		SDL_DetachThread(aThread);
-	}
-}
-void AppBase::CursorThreadProc()
-{
-	SDL_SetCurrentThreadPriority(SDL_THREAD_PRIORITY_HIGH);
-	SDL_Point aLastCursorPos = {0, 0};
-	int aLastDrawCount = 0;
-
-	while (!mShutdown)
-	{
-
-		SDL_Point aCursorPos;
-
-		float x, y;
-
-		SDL_GetMouseState(&x, &y);
-
-		aCursorPos.x = (int)x;
-		aCursorPos.y = (int)y;
-
-		if (aLastDrawCount != mDrawCount)
-		{
-			// We did a draw so we may have committed a pending mNextCursorX/Y
-			aLastCursorPos.x = mSDLInterface->mCursorX;
-			aLastCursorPos.y = mSDLInterface->mCursorY;
-		}
-
-		if ((aCursorPos.x != aLastCursorPos.x) || (aCursorPos.y != aLastCursorPos.y))
-		{
-			Uint32 aTimeNow = SDL_GetTicks();
-			if (aTimeNow - mNextDrawTick > mSDLInterface->mMillisecondsPerFrame + 5)
-			{
-				// Do the special drawing if we are rendering at less than full framerate
-				mSDLInterface->SetCursorPos(aCursorPos.x, aCursorPos.y);
-				aLastCursorPos = aCursorPos;
-			}
-			else
-			{
-				// Set them up to get assigned in the next screen redraw
-				mSDLInterface->mNextCursorX = aCursorPos.x;
-				mSDLInterface->mNextCursorY = aCursorPos.y;
-			}
-		}
-
-		SDL_Delay(10);
-	}
-
-	mCursorThreadRunning = false;
-}
-
-int AppBase::CursorThreadProcStub(void *theArg)
-{
-	AppBase *aPopLibApp = (AppBase *)theArg;
-	aPopLibApp->CursorThreadProc();
-	return 0;
-}
-
-void AppBase::StartCursorThread()
-{
-	if (!mCursorThreadRunning)
-	{
-		mCursorThreadRunning = true;
-		SDL_SetCurrentThreadPriority(SDL_THREAD_PRIORITY_HIGH);
-		SDL_Thread *aThread = SDL_CreateThread(CursorThreadProcStub, "CursorThread", (void *)this);
 		SDL_DetachThread(aThread);
 	}
 }
@@ -2555,8 +2414,8 @@ void AppBase::SetAlphaDisabled(bool isDisabled)
 	if (mAlphaDisabled != isDisabled)
 	{
 		mAlphaDisabled = isDisabled;
-		mSDLInterface->SetVideoOnlyDraw(mAlphaDisabled);
-		mWidgetManager->mImage = mSDLInterface->GetScreenImage();
+		mRenderer->SetVideoOnlyDraw(mAlphaDisabled);
+		mWidgetManager->mImage = mRenderer->GetScreenImage();
 		mWidgetManager->MarkAllDirty();
 	}
 }
@@ -2565,67 +2424,81 @@ void AppBase::EnforceCursor()
 {
 	bool wantSysCursor = true;
 
-	if (mSDLInterface == nullptr)
+	SDL_SystemCursor sdlCursorType;
+
+	switch (mCursorNum)
+	{
+	case CursorType::Hand:
+		sdlCursorType = SDL_SYSTEM_CURSOR_POINTER;
+		break;
+	case CursorType::Dragging:
+		sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
+		break;
+	case CursorType::Text:
+		sdlCursorType = SDL_SYSTEM_CURSOR_TEXT;
+		break;
+	case CursorType::CircleSlash:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NOT_ALLOWED;
+		break;
+	case CursorType::SizeAll:
+		sdlCursorType = SDL_SYSTEM_CURSOR_MOVE;
+		break;
+	case CursorType::SizeNESW:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NESW_RESIZE;
+		break;
+	case CursorType::SizeNS:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NS_RESIZE;
+		break;
+	case CursorType::SizeNWSE:
+		sdlCursorType = SDL_SYSTEM_CURSOR_NWSE_RESIZE;
+		break;
+	case CursorType::SizeWE:
+		sdlCursorType = SDL_SYSTEM_CURSOR_EW_RESIZE;
+		break;
+	case CursorType::Wait:
+		sdlCursorType = SDL_SYSTEM_CURSOR_WAIT;
+		break;
+	case CursorType::Unknown:
+		SDL_HideCursor();
 		return;
+	case CursorType::Pointer:
+	default:
+		sdlCursorType = SDL_SYSTEM_CURSOR_DEFAULT;
+		break;
+	}
 
 	if ((mSEHOccured) || (!mMouseIn))
 	{
-		mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_DEFAULT);
-		if (mSDLInterface->SetCursorImage(nullptr))
-			mCustomCursorDirty = true;
+		SDL_Cursor *aCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
+		SDL_SetCursor(aCursor);
 	}
 	else
 	{
-		if ((mCursorImages[mCursorNum] == nullptr) || ((!mCustomCursorsEnabled) && (mCursorNum != CURSOR_CUSTOM)))
+		if ((mCursorImages[static_cast<int>(mCursorNum)] == nullptr) ||
+			((!mCustomCursorsEnabled) && (mCursorNum != CursorType::Custom)))
 		{
-			switch (mCursorNum)
-			{
-			case CURSOR_POINTER:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_DEFAULT);
-				break;
-			case CURSOR_HAND:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_POINTER);
-				break;
-			case CURSOR_TEXT:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_TEXT);
-				break;
-			case CURSOR_DRAGGING:
-				SDL_SetCursor(mDraggingCursor);
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_TEXT);
-				break;
-			case CURSOR_CIRCLE_SLASH:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_NOT_ALLOWED);
-				break;
-			case CURSOR_SIZEALL:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_MOVE);
-				break;
-			case CURSOR_SIZENESW:
-			case CURSOR_SIZENS:
-			case CURSOR_SIZENWSE:
-			case CURSOR_SIZEWE:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_NWSE_RESIZE);
-				break;
-			case CURSOR_WAIT:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_WAIT);
-				break;
-			case CURSOR_CUSTOM:
-			case CURSOR_NONE:
-				SDL_SetCursor(nullptr);
-				break;
-			default:
-				mSDLInterface->SetCursor(SDL_SYSTEM_CURSOR_DEFAULT);
-				break;
-			}
-
-			if (mSDLInterface->SetCursorImage(nullptr))
-				mCustomCursorDirty = true;
+			SDL_Cursor *aCursor = SDL_CreateSystemCursor(sdlCursorType);
+			SDL_SetCursor(aCursor);
 		}
 		else
 		{
-			if (mSDLInterface->SetCursorImage(mCursorImages[mCursorNum]))
-				mCustomCursorDirty = true;
+			SDL_Surface *aSurface = SDL_CreateSurfaceFrom(
+				mCursorImages[static_cast<int>(mCursorNum)]->mWidth,
+				mCursorImages[static_cast<int>(mCursorNum)]->mHeight,
+				SDL_PIXELFORMAT_ARGB8888,
+				static_cast<SDLImage*>(mCursorImages[static_cast<int>(mCursorNum)])->GetBits(),
+				mCursorImages[static_cast<int>(mCursorNum)]->mWidth * sizeof(ulong)
+			);
 
-			wantSysCursor = false;
+			SDL_Cursor *aCursor = SDL_CreateColorCursor(
+				aSurface,
+				mCursorImages[static_cast<int>(mCursorNum)]->mWidth / 2,
+				mCursorImages[static_cast<int>(mCursorNum)]->mHeight / 2
+			);
+
+			SDL_SetCursor(aCursor);
+
+			SDL_DestroySurface(aSurface);
 		}
 	}
 
@@ -2633,9 +2506,7 @@ void AppBase::EnforceCursor()
 	{
 		mSysCursor = wantSysCursor;
 
-		// Don't hide the hardware cursor when playing back a demo buffer
-		//		if (!mPlayingDemoBuffer)
-		//			::ShowCursor(mSysCursor);
+		// Optionally show/hide cursor if needed here
 	}
 }
 
@@ -2790,7 +2661,7 @@ bool AppBase::Process(bool allowSleep)
 
 				++mNonDrawCount;
 				bool hasRealUpdate = DoUpdateFrames();
-				DBG_ASSERTE(hasRealUpdate);
+				ASSERT(hasRealUpdate);
 
 				if (!hasRealUpdate)
 					break;
@@ -2876,7 +2747,7 @@ bool AppBase::Process(bool allowSleep)
 	if (theModalDialogId != -1)
 	{
 		aDialog = GetDialog(theModalDialogId);
-		DBG_ASSERTE(aDialog != nullptr);
+		ASSERT(aDialog != nullptr);
 		if (aDialog == nullptr)
 			return;
 	}
@@ -2980,26 +2851,27 @@ bool AppBase::UpdateApp()
 	}
 }
 
-int AppBase::InitSDLInterface()
+int AppBase::InitInterface()
 {
-	PreSDLInterfaceInitHook();
+	PreInterfaceInitHook();
 	DeleteNativeImageData();
-	int aResult = mSDLInterface->Init(mIsWindowed);
-	if (SDLInterface::RESULT_OK == aResult)
+
+	int aResult = mRenderer->Init();
+	if (aResult == Renderer::RESULT_OK)
 	{
-		mScreenBounds.mX = (mWidth - mSDLInterface->mWidth) / 2;
-		mScreenBounds.mY = (mHeight - mSDLInterface->mHeight) / 2;
-		mScreenBounds.mWidth = mSDLInterface->mWidth;
-		mScreenBounds.mHeight = mSDLInterface->mHeight;
-		mSDLInterface->UpdateViewport();
-		mWidgetManager->Resize(mScreenBounds, mSDLInterface->mPresentationRect);
-		PostSDLInterfaceInitHook();
+		mScreenBounds.mX = (mWidth - mRenderer->mWidth) / 2;
+		mScreenBounds.mY = (mHeight - mRenderer->mHeight) / 2;
+		mScreenBounds.mWidth = mRenderer->mWidth;
+		mScreenBounds.mHeight = mRenderer->mHeight;
+		mRenderer->UpdateViewport();
+		mWidgetManager->Resize(mScreenBounds, mRenderer->mPresentationRect);
+		PostInterfaceInitHook();
 
 		if (mIGUIManager)
 			delete mIGUIManager;
-		mIGUIManager = new ImGuiManager(mSDLInterface);
-		RegisterImGuiWindows();
 
+		mIGUIManager = new ImGuiManager(mRenderer);
+		RegisterImGuiWindows();
 	}
 	return aResult;
 }
@@ -3013,12 +2885,10 @@ void AppBase::Start()
 	if (mShutdown)
 		return;
 
-	StartCursorThread();
-
 	if (mAutoStartLoadingThread)
 		StartLoadingThread();
 
-	SDL_RaiseWindow(mSDLInterface->mWindow);
+	SDL_RaiseWindow(mWindow);
 
 	int aCount = 0;
 	int aSleepCount = 0;
@@ -3037,16 +2907,16 @@ void AppBase::Start()
 
 	WaitForLoadingThread();
 
-	SDL_Log("Seconds       = %g\r\n", (SDL_GetTicks() - aStartTime) / 1000.0);
+	LOG_INFO("Seconds       = %g\r\n", (SDL_GetTicks() - aStartTime) / 1000.0);
 	// sprintf(aString, "Count         = %d\r\n", aCount);
 	// OutputDebugString(aString);
-	SDL_Log("Sleep Count   = %d\r\n", mSleepCount);
-	SDL_Log("Update Count  = %d\r\n", mUpdateCount);
-	SDL_Log("Draw Count    = %d\r\n", mDrawCount);
-	SDL_Log("Screen Blt    = %d\r\n", mScreenBltTime);
+	LOG_INFO("Sleep Count   = %d\r\n", mSleepCount);
+	LOG_INFO("Update Count  = %d\r\n", mUpdateCount);
+	LOG_INFO("Draw Count    = %d\r\n", mDrawCount);
+	LOG_INFO("Screen Blt    = %d\r\n", mScreenBltTime);
 	if (mDrawTime + mScreenBltTime > 0)
 	{
-		SDL_Log("Avg FPS       = %d\r\n", (mDrawCount * 1000) / (mDrawTime + mScreenBltTime));
+		LOG_INFO("Avg FPS       = %d\r\n", (mDrawCount * 1000) / (mDrawTime + mScreenBltTime));
 	}
 
 	PreTerminate();
@@ -3116,7 +2986,7 @@ void AppBase::ShowResourceError(bool doExit)
 bool AppBase::GetBoolean(const std::string &theId)
 {
 	StringBoolMap::iterator anItr = mBoolProperties.find(theId);
-	DBG_ASSERTE(anItr != mBoolProperties.end());
+	ASSERT(anItr != mBoolProperties.end());
 
 	if (anItr != mBoolProperties.end())
 		return anItr->second;
@@ -3137,7 +3007,7 @@ bool AppBase::GetBoolean(const std::string &theId, bool theDefault)
 int AppBase::GetInteger(const std::string &theId)
 {
 	StringIntMap::iterator anItr = mIntProperties.find(theId);
-	DBG_ASSERTE(anItr != mIntProperties.end());
+	ASSERT(anItr != mIntProperties.end());
 
 	if (anItr != mIntProperties.end())
 		return anItr->second;
@@ -3158,7 +3028,7 @@ int AppBase::GetInteger(const std::string &theId, int theDefault)
 double AppBase::GetDouble(const std::string &theId)
 {
 	StringDoubleMap::iterator anItr = mDoubleProperties.find(theId);
-	DBG_ASSERTE(anItr != mDoubleProperties.end());
+	ASSERT(anItr != mDoubleProperties.end());
 
 	if (anItr != mDoubleProperties.end())
 		return anItr->second;
@@ -3179,7 +3049,7 @@ double AppBase::GetDouble(const std::string &theId, double theDefault)
 PopString AppBase::GetString(const std::string &theId)
 {
 	StringStringMap::iterator anItr = mStringProperties.find(theId);
-	DBG_ASSERTE(anItr != mStringProperties.end());
+	ASSERT(anItr != mStringProperties.end());
 
 	if (anItr != mStringProperties.end())
 		return anItr->second;
@@ -3200,7 +3070,7 @@ PopString AppBase::GetString(const std::string &theId, const PopString &theDefau
 StringVector AppBase::GetStringVector(const std::string &theId)
 {
 	StringStringVectorMap::iterator anItr = mStringVectorProperties.find(theId);
-	DBG_ASSERTE(anItr != mStringVectorProperties.end());
+	ASSERT(anItr != mStringVectorProperties.end());
 
 	if (anItr != mStringVectorProperties.end())
 		return anItr->second;
@@ -3238,25 +3108,61 @@ void AppBase::SetDouble(const std::string &theId, double theValue)
 		aPair.first->second = theValue;
 }
 
+#if defined(__APPLE__)
+// macOS: access the argv pointer provided by the runtime
+extern "C"
+{
+	extern char ***_NSGetArgv();
+	extern int *_NSGetArgc();
+}
+#endif
+
 void AppBase::DoParseCmdLine()
 {
-	/*
-	char *aCmdLine = GetCommandLineA();
-	char *aCmdLinePtr = aCmdLine;
-	if (aCmdLinePtr[0] == '"')
+	std::string cmdLine;
+
+#ifdef _WIN32
+	cmdLine = GetCommandLineA();
+
+#elif defined(__APPLE__)
+	// macOS: grab argc/argv from the Obj-C runtime
+	int argc = *_NSGetArgc();
+	char **argv = *_NSGetArgv();
+	for (int i = 0; i < argc; ++i)
 	{
-		aCmdLinePtr = strchr(aCmdLinePtr + 1, '"');
-		if (aCmdLinePtr != nullptr)
-			aCmdLinePtr++;
+		if (i)
+			cmdLine += ' ';
+		cmdLine += argv[i];
+	}
+#else
+	std::ifstream f("/proc/self/cmdline", std::ios::binary);
+	if (f)
+	{
+		std::string arg;
+		// /proc/self/cmdline is a sequence of NUL-terminated strings:
+		while (std::getline(f, arg, '\0'))
+		{
+			if (!cmdLine.empty())
+				cmdLine += ' ';
+			cmdLine += arg;
+		}
+	}
+#endif
+
+	size_t pos = 0;
+	if (!cmdLine.empty() && cmdLine[0] == '"')
+	{
+		// skip leading quoted exe-path
+		pos = cmdLine.find('"', 1);
+		if (pos != std::string::npos)
+			++pos;
 	}
 
-	if (aCmdLinePtr != nullptr)
+	pos = cmdLine.find(' ', pos);
+	if (pos != std::string::npos)
 	{
-		aCmdLinePtr = strchr(aCmdLinePtr, ' ');
-		if (aCmdLinePtr != nullptr)
-			ParseCmdLine(aCmdLinePtr + 1);
+		ParseCmdLine(cmdLine.c_str() + pos + 1);
 	}
-	*/
 
 	mCmdLineParsed = true;
 }
@@ -3309,37 +3215,42 @@ void AppBase::ParseCmdLine(const std::string &theCmdLine)
 static int GetMaxDemoFileNum(const std::string &theDemoPrefix, int theMaxToKeep, bool doErase)
 {
 	typedef std::set<int> IntSet;
-    IntSet aSet;
+	IntSet aSet;
 
-    std::string prefixDir = fs::path(theDemoPrefix).parent_path().string();
-    std::string prefixBase = fs::path(theDemoPrefix).filename().string(); // just the prefix, e.g., "demo"
+	std::string prefixDir = fs::path(theDemoPrefix).parent_path().string();
+	std::string prefixBase = fs::path(theDemoPrefix).filename().string(); // just the prefix, e.g., "demo"
 
-    if (prefixDir.empty()) prefixDir = "."; // use current dir if none
+	if (prefixDir.empty())
+		prefixDir = "."; // use current dir if none
 
-    std::regex pattern("^" + prefixBase + R"((\d+)\.dmo$)");
+	std::regex pattern("^" + prefixBase + R"((\d+)\.dmo$)");
 
-    for (const auto& entry : fs::directory_iterator(prefixDir)) {
-        if (!entry.is_regular_file()) continue;
+	for (const auto &entry : fs::directory_iterator(prefixDir))
+	{
+		if (!entry.is_regular_file())
+			continue;
 
-        std::smatch match;
-        std::string filename = entry.path().filename().string();
+		std::smatch match;
+		std::string filename = entry.path().filename().string();
 
-        if (std::regex_match(filename, match, pattern)) {
-            int num = std::stoi(match[1]);
-            aSet.insert(num);
-        }
-    }
+		if (std::regex_match(filename, match, pattern))
+		{
+			int num = std::stoi(match[1]);
+			aSet.insert(num);
+		}
+	}
 
-    if (!aSet.empty() && (int)aSet.size() > theMaxToKeep - 1 && doErase) {
-        auto anItr = aSet.begin();
-        std::string fileToDelete = theDemoPrefix + std::to_string(*anItr) + ".dmo";
-        fs::remove(fileToDelete);
-    }
+	if (!aSet.empty() && (int)aSet.size() > theMaxToKeep - 1 && doErase)
+	{
+		auto anItr = aSet.begin();
+		std::string fileToDelete = theDemoPrefix + std::to_string(*anItr) + ".dmo";
+		fs::remove(fileToDelete);
+	}
 
-    if (aSet.empty())
-        return 0;
+	if (aSet.empty())
+		return 0;
 
-    return *aSet.rbegin(); // last (max) value
+	return *aSet.rbegin(); // last (max) value
 }
 
 void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::string &theParamValue)
@@ -3358,6 +3269,16 @@ void AppBase::HandleCmdLineParam(const std::string &theParamName, const std::str
 	{
 		mChangeDirTo = theParamValue;
 	}
+	//-- rendering
+	else if (theParamName == "-sdlrenderer")
+	{
+		mRendererAPI = Renderers::SDL;
+	}
+	else if (theParamName == "-opengl")
+	{
+		mRendererAPI = Renderers::OpenGL;
+	}
+	//-- end rendering
 	else
 	{
 		Popup(GetString("INVALID_COMMANDLINE_PARAM", "Invalid command line parameter: ") + theParamName);
@@ -3369,11 +3290,11 @@ void AppBase::PreDisplayHook()
 {
 }
 
-void AppBase::PreSDLInterfaceInitHook()
+void AppBase::PreInterfaceInitHook()
 {
 }
 
-void AppBase::PostSDLInterfaceInitHook()
+void AppBase::PostInterfaceInitHook()
 {
 }
 
@@ -3387,7 +3308,7 @@ MusicInterface *AppBase::CreateMusicInterface()
 	if (mNoSoundNeeded)
 		return new MusicInterface;
 	else
-		return new BassMusicInterface();
+		return new OpenMPTMusicInterface();
 }
 
 void AppBase::InitPropertiesHook()
@@ -3401,7 +3322,6 @@ void AppBase::InitHook()
 void AppBase::Init()
 {
 	mPrimaryThreadId = SDL_GetCurrentThreadID();
-	mErrorHandler = new ErrorHandler(this);
 
 	if (mShutdown)
 		return;
@@ -3442,7 +3362,7 @@ void AppBase::Init()
 	{
 		// How can we be windowed if our screen isn't even big enough?
 		SDL_DisplayID displayID = SDL_GetPrimaryDisplay();
-		const SDL_DisplayMode* dm = SDL_GetCurrentDisplayMode(displayID);
+		const SDL_DisplayMode *dm = SDL_GetCurrentDisplayMode(displayID);
 		int screenWidth = dm->w;
 		int screenHeight = dm->h;
 
@@ -3465,11 +3385,13 @@ void AppBase::Init()
 	SetMusicVolume(mMusicVolume);
 
 	if (IsScreenSaver())
-	{
-		SetCursor(CURSOR_NONE);
-	}
+		SetCursor(CursorType::Unknown);
 
 	InitHook();
+
+	// ok, i assume here
+	m_pScriptingBase->SetScriptFolder("scripts/");
+	m_pScriptingBase->ExecuteFolder("");
 
 	mInitialized = true;
 }
@@ -3494,13 +3416,13 @@ std::string AppBase::GetClipboard()
 	return aString;
 }
 
-void AppBase::SetCursor(int theCursorNum)
+void AppBase::SetCursor(CursorType theCursorNum)
 {
 	mCursorNum = theCursorNum;
 	EnforceCursor();
 }
 
-int AppBase::GetCursor()
+CursorType AppBase::GetCursor()
 {
 	return mCursorNum;
 }
@@ -3513,24 +3435,24 @@ void AppBase::EnableCustomCursors(bool enabled)
 
 void AppBase::SetTaskBarIcon(const std::string &theFileName)
 {
-	// H521
+	// we use SDL to load taskbar icons
 	int width, height, channels;
 	unsigned char *data = stbi_load(theFileName.c_str(), &width, &height, &channels, 4);
 	if (!data)
 	{
-		SDL_Log("failed to load image: %s\n", stbi_failure_reason());
+		LOG_ERROR("failed to load image: %s\n", stbi_failure_reason());
 		return;
 	}
 
-	SDL_Surface *surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, data, width*4);
+	SDL_Surface *surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4);
 	if (!surface)
 	{
-		SDL_Log("no surface?\n");
+		LOG_ERROR("no surface?\n");
 		stbi_image_free(data);
 		return;
 	}
 
-	SDL_SetWindowIcon(mSDLInterface->mWindow, surface);
+	SDL_SetWindowIcon(mWindow, surface);
 
 	stbi_image_free(surface->pixels);
 	SDL_DestroySurface(surface);
@@ -3538,56 +3460,57 @@ void AppBase::SetTaskBarIcon(const std::string &theFileName)
 	return;
 }
 
-PopLib::SDLImage *AppBase::GetImage(const std::string &theFileName, bool commitBits)
+PopLib::GPUImage *AppBase::GetImage(const std::string &theFileName, bool commitBits)
 {
 	ImageLib::Image *aLoadedImage = ImageLib::GetImage(theFileName, true);
 
 	if (aLoadedImage == nullptr)
 		return nullptr;
 
-	SDLImage *anImage = new SDLImage(mSDLInterface);
+	GPUImage *anImage = mRenderer->NewGPUImage();
 	anImage->mFilePath = theFileName;
-	anImage->SetBits((uint32_t*)aLoadedImage->GetBits(), aLoadedImage->GetWidth(), aLoadedImage->GetHeight(), commitBits);
+	anImage->SetBits((uint32_t *)aLoadedImage->GetBits(), aLoadedImage->GetWidth(), aLoadedImage->GetHeight(),
+					 commitBits);
 	delete aLoadedImage;
 
 	return anImage;
 }
 
-PopLib::SDLImage *AppBase::CreateCrossfadeImage(PopLib::Image *theImage1, const Rect &theRect1,
-												 PopLib::Image *theImage2, const Rect &theRect2, double theFadeFactor)
+PopLib::GPUImage *AppBase::CreateCrossfadeImage(PopLib::Image *theImage1, const Rect &theRect1,
+												PopLib::Image *theImage2, const Rect &theRect2, double theFadeFactor)
 {
-	MemoryImage *aMemoryImage1 = dynamic_cast<MemoryImage *>(theImage1);
-	MemoryImage *aMemoryImage2 = dynamic_cast<MemoryImage *>(theImage2);
+	GPUImage *aGPUImage1 = dynamic_cast<GPUImage *>(theImage1);
+	GPUImage *aGPUImage2 = dynamic_cast<GPUImage *>(theImage2);
 
-	if ((aMemoryImage1 == nullptr) || (aMemoryImage2 == nullptr))
+	if ((aGPUImage1 == nullptr) || (aGPUImage2 == nullptr))
 		return nullptr;
 
 	if ((theRect1.mX < 0) || (theRect1.mY < 0) || (theRect1.mX + theRect1.mWidth > theImage1->GetWidth()) ||
 		(theRect1.mY + theRect1.mHeight > theImage1->GetHeight()))
 	{
-		DBG_ASSERTE("Crossfade Rect1 out of bounds");
+		ASSERT("Crossfade Rect1 out of bounds");
 		return nullptr;
 	}
 
 	if ((theRect2.mX < 0) || (theRect2.mY < 0) || (theRect2.mX + theRect2.mWidth > theImage2->GetWidth()) ||
 		(theRect2.mY + theRect2.mHeight > theImage2->GetHeight()))
 	{
-		DBG_ASSERTE("Crossfade Rect2 out of bounds");
+		ASSERT("Crossfade Rect2 out of bounds");
 		return nullptr;
 	}
 
 	int aWidth = theRect1.mWidth;
 	int aHeight = theRect1.mHeight;
 
-	SDLImage *anImage = new SDLImage(mSDLInterface);
+	GPUImage *anImage = mRenderer->NewGPUImage();
 	anImage->Create(aWidth, aHeight);
 
 	ulong *aDestBits = anImage->GetBits();
-	ulong *aSrcBits1 = aMemoryImage1->GetBits();
-	ulong *aSrcBits2 = aMemoryImage2->GetBits();
+	ulong *aSrcBits1 = aGPUImage1->GetBits();
+	ulong *aSrcBits2 = aGPUImage2->GetBits();
 
-	int aSrc1Width = aMemoryImage1->GetWidth();
-	int aSrc2Width = aMemoryImage2->GetWidth();
+	int aSrc1Width = aGPUImage1->GetWidth();
+	int aSrc2Width = aGPUImage2->GetWidth();
 	ulong aMult = (int)(theFadeFactor * 256);
 	ulong aOMM = (256 - aMult);
 
@@ -3619,22 +3542,22 @@ PopLib::SDLImage *AppBase::CreateCrossfadeImage(PopLib::Image *theImage1, const 
 
 void AppBase::ColorizeImage(Image *theImage, const Color &theColor)
 {
-	MemoryImage *aSrcMemoryImage = dynamic_cast<MemoryImage *>(theImage);
+	GPUImage *aSrcGPUImage = dynamic_cast<GPUImage *>(theImage);
 
-	if (aSrcMemoryImage == nullptr)
+	if (aSrcGPUImage == nullptr)
 		return;
 
 	ulong *aBits;
 	int aNumColors;
 
-	if (aSrcMemoryImage->mColorTable == nullptr)
+	if (aSrcGPUImage->mColorTable == nullptr)
 	{
-		aBits = aSrcMemoryImage->GetBits();
+		aBits = aSrcGPUImage->GetBits();
 		aNumColors = theImage->GetWidth() * theImage->GetHeight();
 	}
 	else
 	{
-		aBits = aSrcMemoryImage->mColorTable;
+		aBits = aSrcGPUImage->mColorTable;
 		aNumColors = 256;
 	}
 
@@ -3674,17 +3597,17 @@ void AppBase::ColorizeImage(Image *theImage, const Color &theColor)
 		}
 	}
 
-	aSrcMemoryImage->BitsChanged();
+	aSrcGPUImage->BitsChanged();
 }
 
-SDLImage *AppBase::CreateColorizedImage(Image *theImage, const Color &theColor)
+GPUImage *AppBase::CreateColorizedImage(Image *theImage, const Color &theColor)
 {
-	MemoryImage *aSrcMemoryImage = dynamic_cast<MemoryImage *>(theImage);
+	GPUImage *aSrcGPUImage = dynamic_cast<GPUImage *>(theImage);
 
-	if (aSrcMemoryImage == nullptr)
+	if (aSrcGPUImage == nullptr)
 		return nullptr;
 
-	SDLImage *anImage = new SDLImage(mSDLInterface);
+	GPUImage *anImage = mRenderer->NewGPUImage();
 
 	anImage->Create(theImage->GetWidth(), theImage->GetHeight());
 
@@ -3692,20 +3615,20 @@ SDLImage *AppBase::CreateColorizedImage(Image *theImage, const Color &theColor)
 	ulong *aDestBits;
 	int aNumColors;
 
-	if (aSrcMemoryImage->mColorTable == nullptr)
+	if (aSrcGPUImage->mColorTable == nullptr)
 	{
-		aSrcBits = aSrcMemoryImage->GetBits();
+		aSrcBits = aSrcGPUImage->GetBits();
 		aDestBits = anImage->GetBits();
 		aNumColors = theImage->GetWidth() * theImage->GetHeight();
 	}
 	else
 	{
-		aSrcBits = aSrcMemoryImage->mColorTable;
+		aSrcBits = aSrcGPUImage->mColorTable;
 		aDestBits = anImage->mColorTable = new ulong[256];
 		aNumColors = 256;
 
 		anImage->mColorIndices = new uchar[anImage->mWidth * theImage->mHeight];
-		memcpy(anImage->mColorIndices, aSrcMemoryImage->mColorIndices, anImage->mWidth * theImage->mHeight);
+		memcpy(anImage->mColorIndices, aSrcGPUImage->mColorIndices, anImage->mWidth * theImage->mHeight);
 	}
 
 	if ((theColor.mAlpha <= 255) && (theColor.mRed <= 255) && (theColor.mGreen <= 255) && (theColor.mBlue <= 255))
@@ -3749,9 +3672,9 @@ SDLImage *AppBase::CreateColorizedImage(Image *theImage, const Color &theColor)
 	return anImage;
 }
 
-SDLImage *AppBase::CopyImage(Image *theImage, const Rect &theRect)
+GPUImage *AppBase::CopyImage(Image *theImage, const Rect &theRect)
 {
-	SDLImage *anImage = new SDLImage(mSDLInterface);
+	GPUImage *anImage = mRenderer->NewGPUImage();
 
 	anImage->Create(theRect.mWidth, theRect.mHeight);
 
@@ -3763,19 +3686,19 @@ SDLImage *AppBase::CopyImage(Image *theImage, const Rect &theRect)
 	return anImage;
 }
 
-SDLImage *AppBase::CopyImage(Image *theImage)
+GPUImage *AppBase::CopyImage(Image *theImage)
 {
 	return CopyImage(theImage, Rect(0, 0, theImage->GetWidth(), theImage->GetHeight()));
 }
 
 void AppBase::MirrorImage(Image *theImage)
 {
-	MemoryImage *aSrcMemoryImage = dynamic_cast<MemoryImage *>(theImage);
+	GPUImage *aSrcGPUImage = dynamic_cast<GPUImage *>(theImage);
 
-	ulong *aSrcBits = aSrcMemoryImage->GetBits();
+	ulong *aSrcBits = aSrcGPUImage->GetBits();
 
-	int aPhysSrcWidth = aSrcMemoryImage->mWidth;
-	for (int y = 0; y < aSrcMemoryImage->mHeight; y++)
+	int aPhysSrcWidth = aSrcGPUImage->mWidth;
+	for (int y = 0; y < aSrcGPUImage->mHeight; y++)
 	{
 		ulong *aLeftBits = aSrcBits + (y * aPhysSrcWidth);
 		ulong *aRightBits = aLeftBits + (aPhysSrcWidth - 1);
@@ -3789,17 +3712,17 @@ void AppBase::MirrorImage(Image *theImage)
 		}
 	}
 
-	aSrcMemoryImage->BitsChanged();
+	aSrcGPUImage->BitsChanged();
 }
 
 void AppBase::FlipImage(Image *theImage)
 {
-	MemoryImage *aSrcMemoryImage = dynamic_cast<MemoryImage *>(theImage);
+	GPUImage *aSrcGPUImage = dynamic_cast<GPUImage *>(theImage);
 
-	ulong *aSrcBits = aSrcMemoryImage->GetBits();
+	ulong *aSrcBits = aSrcGPUImage->GetBits();
 
-	int aPhysSrcHeight = aSrcMemoryImage->mHeight;
-	int aPhysSrcWidth = aSrcMemoryImage->mWidth;
+	int aPhysSrcHeight = aSrcGPUImage->mHeight;
+	int aPhysSrcWidth = aSrcGPUImage->mWidth;
 	for (int x = 0; x < aPhysSrcWidth; x++)
 	{
 		ulong *aTopBits = aSrcBits + x;
@@ -3816,16 +3739,16 @@ void AppBase::FlipImage(Image *theImage)
 		}
 	}
 
-	aSrcMemoryImage->BitsChanged();
+	aSrcGPUImage->BitsChanged();
 }
 
-void AppBase::RotateImageHue(PopLib::MemoryImage *theImage, int theDelta)
+void AppBase::RotateImageHue(PopLib::GPUImage *theImage, int theDelta)
 {
 	while (theDelta < 0)
 		theDelta += 256;
 
 	int aSize = theImage->mWidth * theImage->mHeight;
-	uint32_t* aPtr = reinterpret_cast<uint32_t*>(theImage->GetBits());
+	uint32_t *aPtr = reinterpret_cast<uint32_t *>(theImage->GetBits());
 	for (int i = 0; i < aSize; i++)
 	{
 		uint32_t aPixel = *aPtr;
@@ -3864,11 +3787,11 @@ void AppBase::RotateImageHue(PopLib::MemoryImage *theImage, int theDelta)
 		int y = (int)(2 * l - v);
 
 		int aColorDiv = (6 * h) / 256;
-		int x = (int)(y + (v - y) * ((h - (aColorDiv * 256 / 6)) * 6) / 255);
+		int x = (int)(y + (v - y) * ((h - (aColorDiv * 256.0 / 6)) * 6) / 255);
 		if (x > 255)
 			x = 255;
 
-		int z = (int)(v - (v - y) * ((h - (aColorDiv * 256 / 6)) * 6) / 255);
+		int z = (int)(v - (v - y) * ((h - (aColorDiv * 256.0 / 6)) * 6) / 255);
 		if (z < 0)
 			z = 0;
 
@@ -3928,11 +3851,11 @@ ulong AppBase::HSLToRGB(int h, int s, int l)
 	int y = (int)(2 * l - v);
 
 	int aColorDiv = (6 * h) / 256;
-	int x = (int)(y + (v - y) * ((h - (aColorDiv * 256 / 6)) * 6) / 255);
+	int x = (int)(y + (v - y) * ((h - (aColorDiv * 256.0 / 6)) * 6) / 255);
 	if (x > 255)
 		x = 255;
 
-	int z = (int)(v - (v - y) * ((h - (aColorDiv * 256 / 6)) * 6) / 255);
+	int z = (int)(v - (v - y) * ((h - (aColorDiv * 256.0 / 6)) * 6) / 255);
 	if (z < 0)
 		z = 0;
 
@@ -4023,19 +3946,19 @@ void AppBase::RGBToHSL(const ulong *theSource, ulong *theDest, int theSize)
 	}
 }
 
-void AppBase::PrecacheAdditive(MemoryImage *theImage)
+void AppBase::PrecacheAdditive(GPUImage *theImage)
 {
-	theImage->GetRLAdditiveData(mSDLInterface);
+	theImage->GetRLAdditiveData(mRenderer);
 }
 
-void AppBase::PrecacheAlpha(MemoryImage *theImage)
+void AppBase::PrecacheAlpha(GPUImage *theImage)
 {
 	theImage->GetRLAlphaData();
 }
 
-void AppBase::PrecacheNative(MemoryImage *theImage)
+void AppBase::PrecacheNative(GPUImage *theImage)
 {
-	theImage->GetNativeAlphaData(mSDLInterface);
+	theImage->GetNativeAlphaData(mRenderer);
 }
 
 void AppBase::PlaySample(int theSoundNum)
@@ -4128,68 +4051,62 @@ void AppBase::SetMasterVolume(double theMasterVolume)
 	mSoundManager->SetMasterVolume(mSfxVolume);
 }
 
-void AppBase::AddMemoryImage(MemoryImage *theMemoryImage)
+void AppBase::AddGPUImage(GPUImage *theGPUImage)
 {
-	AutoCrit anAutoCrit(mSDLInterface->mCritSect);
-	mMemoryImageSet.insert(theMemoryImage);
+	AutoCrit anAutoCrit(mRenderer->mCritSect);
+	mGPUImageSet.insert(theGPUImage);
 }
 
-void AppBase::RemoveMemoryImage(MemoryImage *theMemoryImage)
+void AppBase::RemoveGPUImage(GPUImage *theGPUImage)
 {
-	// AutoCrit anAutoCrit(mSDLInterface->mCritSect);
-	MemoryImageSet::iterator anItr = mMemoryImageSet.find(theMemoryImage);
-	if (anItr != mMemoryImageSet.end())
-		mMemoryImageSet.erase(anItr);
+	AutoCrit anAutoCrit(mRenderer->mCritSect);
+	GPUImageSet::iterator anItr = mGPUImageSet.find(theGPUImage);
+	if (anItr != mGPUImageSet.end())
+		mGPUImageSet.erase(anItr);
 
-	Remove3DData(theMemoryImage);
+	Remove3DData(theGPUImage);
 }
 
-void AppBase::Remove3DData(MemoryImage *theMemoryImage)
+void AppBase::Remove3DData(GPUImage *theGPUImage)
 {
-	if (mSDLInterface)
-		mSDLInterface->Remove3DData(theMemoryImage);
+	if (mRenderer)
+		mRenderer->Remove3DData(theGPUImage);
 }
 
 bool AppBase::Is3DAccelerated()
 {
-	return mSDLInterface->mIs3D;
+	return mRenderer->mIs3D;
 }
 
 bool AppBase::Is3DAccelerationSupported()
 {
-	// if (mSDLInterface->mD3DTester)
-	//	return mDDInterface->mD3DTester->Is3DSupported();
-	// else
-	return true;
+	return (APITester::IsDirect3DAvailable(mWindow) || APITester::IsOpenGLAvailable(mWindow));
 }
 
 bool AppBase::Is3DAccelerationRecommended()
 {
-	// if (mSDLInterface->mD3DTester)
-	//	return mDDInterface->mD3DTester->Is3DRecommended();
-	// else
-	return true;
+	return Is3DAccelerationSupported();
 }
 
 void AppBase::Set3DAcclerated(bool is3D, bool reinit)
 {
-	if (mSDLInterface->mIs3D == is3D)
+	if (mRenderer->mIs3D == is3D)
 		return;
 
 	mUserChanged3DSetting = true;
-	mSDLInterface->mIs3D = is3D;
+	mRenderer->mIs3D = is3D;
 
 	if (reinit)
 	{
-		int aResult = InitSDLInterface();
+		int aResult = InitInterface();
 
-		if (is3D && aResult == SDLInterface::RESULT_3D_FAIL)
+		if (is3D && aResult == Renderer::RESULT_3D_FAIL)
 		{
 			Set3DAcclerated(false, reinit);
 			return;
 		}
 
-		if (aResult != SDLInterface::RESULT_OK)
+		if (aResult != Renderer::RESULT_OK)
 		{
 			Popup(GetString("FAILED_INIT_DIRECTDRAW", "Failed to initialize DirectDraw: ") + SDL_GetError());
 			DoExit(1);
@@ -4197,7 +4114,7 @@ void AppBase::Set3DAcclerated(bool is3D, bool reinit)
 
 		ReInitImages();
 
-		mWidgetManager->mImage = mSDLInterface->GetScreenImage();
+		mWidgetManager->mImage = mRenderer->GetScreenImage();
 		mWidgetManager->MarkAllDirty();
 	}
 }
@@ -4211,7 +4128,7 @@ SharedImageRef AppBase::GetSharedImage(const std::string &theFileName, const std
 	SharedImageRef aSharedImageRef;
 
 	{
-		AutoCrit anAutoCrit(mSDLInterface->mCritSect);
+		AutoCrit anAutoCrit(mRenderer->mCritSect);
 		aResultPair = mSharedImageMap.insert(
 			SharedImageMap::value_type(SharedImageMap::key_type(anUpperFileName, anUpperVariant), SharedImage()));
 		aSharedImageRef = &aResultPair.first->second;
@@ -4224,7 +4141,7 @@ SharedImageRef AppBase::GetSharedImage(const std::string &theFileName, const std
 	{
 		// Pass in a '!' as the first char of the file name to create a new image
 		if ((theFileName.length() > 0) && (theFileName[0] == '!'))
-			aSharedImageRef.mSharedImage->mImage = new SDLImage(mSDLInterface);
+			aSharedImageRef.mSharedImage->mImage = mRenderer->NewGPUImage();
 		else
 			aSharedImageRef.mSharedImage->mImage = GetImage(theFileName, false);
 	}
@@ -4234,7 +4151,7 @@ SharedImageRef AppBase::GetSharedImage(const std::string &theFileName, const std
 
 void AppBase::CleanSharedImages()
 {
-	AutoCrit anAutoCrit(mSDLInterface->mCritSect);
+	AutoCrit anAutoCrit(mRenderer->mCritSect);
 
 	if (mCleanupSharedImages)
 	{

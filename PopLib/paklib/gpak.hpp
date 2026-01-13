@@ -1,13 +1,11 @@
 ﻿#ifndef __GPAK_HPP__
 #define __GPAK_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include <cstdint>
 #include <string>
 #include <vector>
-
 
 /**
  * @brief GPAK header

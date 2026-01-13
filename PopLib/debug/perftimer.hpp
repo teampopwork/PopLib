@@ -1,8 +1,7 @@
 #ifndef __PERFTIMER_HPP__
 #define __PERFTIMER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 

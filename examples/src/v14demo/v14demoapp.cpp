@@ -1,7 +1,5 @@
 #include "v14demoapp.hpp"
 #include "PopLib/widget/widgetmanager.hpp"
-#include "PopLib/graphics/sdlimage.hpp"
-#include "PopLib/graphics/sdlinterface.hpp"
 #include "PopLib/imagelib/imagelib.hpp"
 #include "PopLib/resources/resourcemanager.hpp"
 #include "PopLib/widget/dialog.hpp"
@@ -9,6 +7,7 @@
 #include "board.hpp"
 #include "res.hpp"
 #include "PopLib/misc/httptransfer.hpp"
+#include "PopLib/debug/log.hpp"
 
 using namespace PopLib;
 
@@ -37,6 +36,9 @@ V14DemoApp::~V14DemoApp()
 
 void V14DemoApp::ShutdownHook()
 {
+	// We call the PopApp Shutdown hook so we can propely shutdown systems like DiscordRPC and SteamAPI.
+	PopApp::ShutdownHook();
+
 	// Notice that we don't have to check for mShutdown and return immediately if it's true.
 	// Also note that we don't have to call our parent class' Shutdown() method. This
 	// ShutdownHook() function is only called once, and only after the parent gets Shutdown
@@ -49,8 +51,9 @@ void V14DemoApp::ShutdownHook()
 
 void V14DemoApp::InitHook()
 {
-	// We call the PopApp Init hook so we can propely set up systems like DiscordRPC.
+	// We call the PopApp Init hook so we can propely set up systems like DiscordRPC and SteamAPI.
 	PopApp::InitHook();
+
 	// Like the ShutdownHook idea, we no longer need to call the parent class' Init method.
 	// This function only gets called once, and after the parent has finished its Init code.
 	// It just saves us a few lines of extra checking, and saves some headaches that can
@@ -106,9 +109,9 @@ void V14DemoApp::InitHook()
 	std::string testURL = "http://httpbin.org/get";
 	transfer.Get(testURL);
 
-	SDL_Log("GET result: %d", transfer.GetResultCode());
-	SDL_Log("GET content length: %zu", transfer.GetContent().size());
-	SDL_Log("GET content:\n%s", transfer.GetContent().c_str());
+	LOG_INFO("GET result: %d", transfer.GetResultCode());
+	LOG_INFO("GET content length: %zu", transfer.GetContent().size());
+	LOG_INFO("GET content:\n%s", transfer.GetContent().c_str());
 #endif
 
 	// H521

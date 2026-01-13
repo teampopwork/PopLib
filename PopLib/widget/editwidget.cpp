@@ -248,7 +248,7 @@ bool EditWidget::IsPartOfWord(PopChar theChar)
 {
 	return (((theChar >= 'A') && (theChar <= 'Z')) || ((theChar >= 'a') && (theChar <= 'z')) ||
 			((theChar >= '0') && (theChar <= '9')) ||
-			(((unsigned int)theChar >= (unsigned int)('�')) && ((unsigned int)theChar <= (unsigned int)('�'))) ||
+			//(((unsigned int)theChar >= (unsigned int)('�')) && ((unsigned int)theChar <= (unsigned int)('�'))) ||
 			(theChar == '_'));
 }
 
@@ -667,14 +667,14 @@ void EditWidget::MouseEnter()
 {
 	Widget::MouseEnter();
 
-	mWidgetManager->mApp->SetCursor(CURSOR_TEXT);
+	mWidgetManager->mApp->SetCursor(CursorType::Text);
 }
 
 void EditWidget::MouseLeave()
 {
 	Widget::MouseLeave();
 
-	mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+	mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 }
 
 void EditWidget::MarkDirty()

@@ -4,7 +4,7 @@
 #include "graphics/font.hpp"
 #include "graphics/image.hpp"
 #include "appbase.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include <cmath>
 
 using namespace PopLib;
@@ -247,9 +247,9 @@ void Widget::ShowFinger(bool on)
 		return;
 
 	if (on)
-		mWidgetManager->mApp->SetCursor(CURSOR_HAND);
+		mWidgetManager->mApp->SetCursor(CursorType::Hand);
 	else
-		mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
+		mWidgetManager->mApp->SetCursor(CursorType::Pointer);
 
 	/*if (on)
 		mWidgetManager->mApplet.setCursor(new Cursor(Cursor.HAND_CURSOR));

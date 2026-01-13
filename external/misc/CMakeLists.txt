@@ -1,3 +1,10 @@
-project(MISC)
+# CMakeLists.txt
+project(misc)
 
-add_library(misc STATIC aes.c) #Please if someone sees this. PLEASE COME WITH A BETTER METHOD.
+set(SOURCES
+	aes.c
+	glad/gl.c
+)
+
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

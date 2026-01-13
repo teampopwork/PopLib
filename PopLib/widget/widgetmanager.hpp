@@ -1,8 +1,7 @@
 #ifndef __WIDGETMANAGER_HPP__
 #define __WIDGETMANAGER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "misc/keycodes.hpp"

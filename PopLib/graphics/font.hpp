@@ -1,8 +1,7 @@
 #ifndef __FONT_HPP__
 #define __FONT_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 #include "math/rect.hpp"

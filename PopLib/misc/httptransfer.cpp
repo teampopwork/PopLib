@@ -1,4 +1,5 @@
 #include "httptransfer.hpp"
+#include "debug/log.hpp"
 #include "appbase.hpp"
 
 using namespace PopLib;
@@ -114,7 +115,7 @@ void HTTPTransfer::GetHelper(const std::string &theURL)
 	CURLcode res = curl_easy_perform(curl);
 	if (res != CURLE_OK)
 	{
-		SDL_Log("CURL error: %s (%d)", curl_easy_strerror(res), (int)res);
+		LOG_ERROR("CURL error: %s (%d)", curl_easy_strerror(res), (int)res);
 		Fail(RESULT_HTTP_ERROR);
 	}
 	else

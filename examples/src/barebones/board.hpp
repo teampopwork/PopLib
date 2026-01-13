@@ -1,8 +1,7 @@
 #ifndef __BOARD_HPP__
 #define __BOARD_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "PopLib/widget/widget.hpp"
 

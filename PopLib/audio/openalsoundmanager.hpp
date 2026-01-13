@@ -1,15 +1,20 @@
 #ifndef __OPENALSOUNDMANAGER_HPP__
 #define __OPENALSOUNDMANAGER_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "soundmanager.hpp"
-#include "bass.h"
 
+#ifndef AL_LIBTYPE_STATIC
 #define AL_LIBTYPE_STATIC
+#endif
+#ifdef __APPLE__
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#else
 #include <AL/al.h>
 #include <AL/alc.h>
+#endif
 
 namespace PopLib
 {
@@ -18,7 +23,7 @@ class OpenALSoundInstance;
 class OpenALSoundManager : public SoundManager
 {
 	friend class OpenALSoundInstance;
-	friend class BassMusicInterface;
+	friend class OpenMPTMusicInterface;
 
   public:
 	ALuint mSourceSounds[MAX_SOURCE_SOUNDS];

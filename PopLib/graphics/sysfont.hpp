@@ -1,8 +1,7 @@
 #ifndef __SYSFONT_HPP__
 #define __SYSFONT_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "font.hpp"
 #include "common.hpp"

@@ -1,8 +1,8 @@
 ﻿#include "openalsoundmanager.hpp"
 #include "openalsoundinstance.hpp"
 #include "paklib/pakinterface.hpp"
-#include "common.hpp"
 #include "aureader.hpp"
+#include "debug/log.hpp"
 
 // Vorbis
 #include "vorbis/codec.h"
@@ -13,19 +13,20 @@
 #include <SDL3/SDL.h>
 
 #if defined(_MSC_VER)
-    #define DEBUG_BREAK() __debugbreak()
+#define DEBUG_BREAK() __debugbreak()
 #elif defined(__GNUC__) || defined(__clang__)
-    #include <signal.h>
-    #define DEBUG_BREAK() raise(SIGTRAP)
+#include <signal.h>
+#define DEBUG_BREAK() raise(SIGTRAP)
 #else
-    #define DEBUG_BREAK() ((void)0)
+#define DEBUG_BREAK() ((void)0)
 #endif
 
-#define AL_CHECK_ERROR()                    \
-    do {                                    \
-        if (alGetError() != AL_NO_ERROR)    \
-            DEBUG_BREAK();                  \
-    } while (0)
+#define AL_CHECK_ERROR()                                                                                               \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (alGetError() != AL_NO_ERROR)                                                                               \
+			DEBUG_BREAK();                                                                                             \
+	} while (0)
 
 using namespace PopLib;
 
@@ -38,7 +39,7 @@ OpenALSoundManager::OpenALSoundManager()
 	mALDevice = alcOpenDevice(NULL); // Default device
 	if (!mALDevice)
 	{
-		SDL_Log("Failed to open OpenAL device!\n");
+		LOG_ERROR("Failed to open OpenAL device!\n");
 		return;
 	}
 
@@ -47,7 +48,7 @@ OpenALSoundManager::OpenALSoundManager()
 	mALContext = alcCreateContext(mALDevice, NULL);
 	if (!mALContext)
 	{
-		SDL_Log("Failed to create OpenAL context!\n");
+		LOG_ERROR("Failed to create OpenAL context!\n");
 		alcCloseDevice(mALDevice);
 		return;
 	}
@@ -58,7 +59,7 @@ OpenALSoundManager::OpenALSoundManager()
 
 	for (i = 0; i < MAX_SOURCE_SOUNDS; i++)
 	{
-		mSourceSounds[i] = NULL;
+		mSourceSounds[i] = 0;
 		mBaseVolumes[i] = 1;
 		mBasePans[i] = 0;
 	}
@@ -232,7 +233,7 @@ static int p_fseek64_wrap(PFILE *f, ogg_int64_t off, int whence)
 {
 	if (!f)
 		return -1;
-	
+
 	return p_fseek(f, (long)off, whence);
 }
 
@@ -357,7 +358,7 @@ void OpenALSoundManager::ReleaseSound(unsigned int theSfxID)
 		ForceReleaseSources(mSourceSounds[theSfxID]);
 		alDeleteBuffers(1, &mSourceSounds[theSfxID]);
 		AL_CHECK_ERROR();
-		mSourceSounds[theSfxID] = NULL;
+		mSourceSounds[theSfxID] = 0;
 		mSourceFileNames[theSfxID] = "";
 	}
 }
@@ -461,7 +462,7 @@ void OpenALSoundManager::ReleaseSounds()
 		if (mSourceSounds[i])
 		{
 			alDeleteBuffers(1, &mSourceSounds[i]);
-			mSourceSounds[i] = NULL;
+			mSourceSounds[i] = 0;
 		}
 }
 

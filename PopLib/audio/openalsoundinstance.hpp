@@ -1,14 +1,17 @@
 #ifndef __OPENALSOUNDINTERFACE_HPP__
 #define __OPENALSOUNDINTERFACE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "soundinstance.hpp"
 
-#define AL_LIBTYPE_STATIC
+#ifdef __APPLE__
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#else
 #include <AL/al.h>
 #include <AL/alc.h>
+#endif
 
 namespace PopLib
 {

@@ -10,7 +10,6 @@ extern "C"
 #include <aes.h>
 }
 
-
 using namespace std;
 
 PakInterface *gPakInterface = new PakInterface();
@@ -108,32 +107,33 @@ bool PakInterface::AddPakFile(const string &fileName)
 	fread(collection.data(), 1, fileSize, fp);
 	fclose(fp);
 
-	//Check for the GPAK in the file header. If it's not there, it's not a valid GPAK file
+	// check for gpak header
 	GPAKHeader *gpakHeader = reinterpret_cast<GPAKHeader *>(collection.data());
 	if (memcmp(gpakHeader->magic, "GPAK", 4) != 0 || gpakHeader->version != 1)
-    	return false;
+		return false;
 
-	GPAKFileEntry *entriesPtr = reinterpret_cast<GPAKFileEntry *>(reinterpret_cast<uint8_t *>(collection.data()) + gpakHeader->fileTableOffset);
+	GPAKFileEntry *entriesPtr =
+		reinterpret_cast<GPAKFileEntry *>(reinterpret_cast<uint8_t *>(collection.data()) + gpakHeader->fileTableOffset);
 	std::vector<GPAKFileEntry> entries(entriesPtr, entriesPtr + gpakHeader->fileCount);
 
-	// the decompressed buffer to fill up.
+	// the decompressed buffer to fill up
 	std::vector<uint8_t> finalBuffer;
 	finalBuffer.reserve(fileSize);
 
-	//Size of the header for recalculating the start pos
+	// Size of the header for recalculating the start pos
 	size_t headerSize = gpakHeader->fileTableOffset + gpakHeader->fileCount * sizeof(GPAKFileEntry);
 
-	for (const GPAKFileEntry& entry : entries)
+	for (const GPAKFileEntry &entry : entries)
 	{
 		std::string upperName = toupper(std::string(entry.path));
-		PakRecord& rec = mPakRecordMap[upperName];
+		PakRecord &rec = mPakRecordMap[upperName];
 		rec.mCollection = &collection;
 		rec.mFileName = entry.path;
 		rec.mSize = entry.originalSize;
 		rec.mFileTime = filesystem::file_time_type::min(); // GPAK doesn't store this yet
 
-		//Decompress and Decrypt the GPAK data.
-		const uint8_t* compressedData = collection.data() + entry.dataOffset;
+		// Decompress and Decrypt the GPAK data.
+		const uint8_t *compressedData = collection.data() + entry.dataOffset;
 		std::vector<uint8_t> compressed(compressedData, compressedData + entry.compressedSize);
 		if (!gDecryptPassword.empty())
 			compressed = AESDecrypt(compressed, gDecryptPassword);
@@ -144,7 +144,7 @@ bool PakInterface::AddPakFile(const string &fileName)
 		finalBuffer.insert(finalBuffer.end(), decompressed.begin(), decompressed.end());
 	}
 
-	//Move the readable data into the collection for fread to use
+	// move the readable data into the collection for fread to use
 	collection.vector() = std::move(finalBuffer);
 
 	return true;
@@ -212,9 +212,9 @@ size_t PakInterface::FRead(void *buf, int size, int count, PFILE *pf)
 {
 	if (pf->mRecord)
 	{
-        PakRecord* rec = pf->mRecord;
+		PakRecord *rec = pf->mRecord;
 
-		int aSizeBytes = std::min(size*count, static_cast<int>(pf->mRecord->mSize - pf->mPos));
+		int aSizeBytes = std::min(size * count, static_cast<int>(pf->mRecord->mSize - pf->mPos));
 
 		std::memcpy(buf, rec->mCollection->data() + rec->mStartPos + pf->mPos, aSizeBytes);
 

@@ -1,8 +1,7 @@
 #ifndef __BOARD_HPP__
 #define __BOARD_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "PopLib/widget/widget.hpp"
 #include "PopLib/widget/buttonlistener.hpp"
@@ -34,6 +33,7 @@ class Board : public Widget, public ButtonListener
 	ButtonWidget *mDemoButton;	 // Creates our DemoWidget
 	ButtonWidget *mDialogButton; // Creates a little dialog box
 	ButtonWidget *mMsgButton;
+	ButtonWidget *mCrashButton;
 	Rect mRect; // A rectangle that gets larger/smaller over time
 
 	bool mExpanding; // Is the above (mRect) rectangle shrinking or growing?

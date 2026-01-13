@@ -1,8 +1,7 @@
 #ifndef __INSETS_HPP__
 #define __INSETS_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 namespace PopLib
 {

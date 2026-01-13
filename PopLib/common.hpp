@@ -1,8 +1,7 @@
 #ifndef __COMMON_HPP__
 #define __COMMON_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #pragma warning(disable : 4786)
 #pragma warning(disable : 4503)
@@ -18,7 +17,6 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-
 
 //vorbis workaounds since for some fucking reason, vorbis force defines min and max.
 #ifdef max
@@ -50,9 +48,7 @@
 #include <stdint.h>
 
 #define _stricmp strcasecmp
-#ifndef _WIN32
 #define stricmp strcasecmp
-#endif
 
 #define _cdecl
 typedef uint8_t BYTE;
@@ -84,12 +80,42 @@ typedef unsigned int uint;
 #undef ulong
 #endif
 #define ulong uint32_t
-typedef __int64 int64;
+// int64 has been removed due to Steam API. I hate this job.
 
 typedef std::map<std::string, std::string> DefinesMap;
 typedef std::map<std::wstring, std::wstring> WStringWStringMap;
 typedef PopString::value_type PopChar;
 #define HAS_PopChar
+
+// @ThePixelMoon: stupid cmake refuses to set these,
+// TODO: change these every new version
+
+#ifndef POPLIB_VERSION_MAJOR
+#define POPLIB_VERSION_MAJOR 2
+#endif
+
+#ifndef POPLIB_VERSION_MINOR
+#define POPLIB_VERSION_MINOR 1
+#endif
+
+#ifndef POPLIB_VERSION_PATCH
+#define POPLIB_VERSION_PATCH 0
+#endif
+
+#ifndef POPLIB_VERSION_STAGE
+#define POPLIB_VERSION_STAGE "alpha"
+#endif
+
+#define STR_HELPER(x) #x
+#define STR_MACRO(x) STR_HELPER(x)
+
+#define POPLIB_VERSION STR_MACRO(POPLIB_VERSION_MAJOR) "." STR_MACRO(POPLIB_VERSION_MINOR) "." STR_MACRO(POPLIB_VERSION_PATCH) "-" STR_MACRO(POPLIB_VERSION_STAGE)
+
+#ifdef _DEBUG
+#define LOGGING_ENABLED
+#define ASSERT_ENABLED
+#endif
+
 
 /**
  * @namespace PopLib
@@ -307,5 +333,8 @@ struct StringLessNoCase
 };
 
 } // namespace PopLib
+
+// @ThePixelMoon: compatibility.
+namespace Sexy = PopLib;
 
 #endif

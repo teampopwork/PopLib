@@ -1,6 +1,6 @@
 #include "common.hpp"
 #include "math/mtrand.hpp"
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -8,7 +8,7 @@
 #include <cstdarg>
 #include <wchar.h>
 
-#include "debug/debug.hpp"
+#include "debug/log.hpp"
 
 bool PopLib::gDebug = false;
 static PopLib::MTRand gMTRand;
@@ -16,6 +16,8 @@ namespace PopLib
 {
 #ifdef _WIN32
 std::string gAppDataFolder = std::filesystem::path(std::getenv("LOCALAPPDATA")).string() + "/";
+#elif __APPLE__
+std::string gAppDataFolder = std::filesystem::path(std::getenv("HOME")).string() + "/Library/Application Support/";
 #else
 std::string gAppDataFolder = std::filesystem::path(std::getenv("HOME")).string() + "/.config/";
 #endif
@@ -58,7 +60,7 @@ std::string PopLib::GetAppDataFolder()
 
 void PopLib::SetAppDataFolder(const std::string &thePath)
 {
-	/*
+#if NEVER
 	std::string aPath = thePath;
 	if (!aPath.empty())
 	{
@@ -67,7 +69,7 @@ void PopLib::SetAppDataFolder(const std::string &thePath)
 	}
 
 	PopLib::gAppDataFolder = aPath;
-	*/
+#endif
 }
 
 std::string PopLib::URLEncode(const std::string &theString)
@@ -162,7 +164,7 @@ std::string PopLib::WStringToString(const std::wstring &theString)
 	}
 	else
 	{
-		DBG_ASSERTE(aRequiredLength != (size_t)-1);
+		ASSERT(aRequiredLength != (size_t)-1);
 		if (aRequiredLength == (size_t)-1)
 			return "";
 

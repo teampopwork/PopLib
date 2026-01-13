@@ -1,8 +1,7 @@
 #ifndef __SHAREDIMAGE_HPP__
 #define __SHAREDIMAGE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 
@@ -10,13 +9,13 @@ namespace PopLib
 {
 
 class Image;
-class SDLImage;
+class GPUImage;
 class MemoryImage;
 
 class SharedImage
 {
   public:
-	SDLImage *mImage;
+	GPUImage *mImage;
 	int mRefCount;
 
 	SharedImage();
@@ -45,7 +44,7 @@ class SharedImageRef
 	MemoryImage *operator->();
 	operator Image *();
 	operator MemoryImage *();
-	operator SDLImage *();
+	operator GPUImage *();
 };
 
 } // namespace PopLib

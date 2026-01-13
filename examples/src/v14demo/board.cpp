@@ -3,6 +3,7 @@
 #include "res.hpp"
 #include "v14demoapp.hpp"
 
+#include "PopLib/debug/sehcatcher.hpp"
 #include "PopLib/graphics/sysfont.hpp"
 #include "PopLib/graphics/font.hpp"
 #include "PopLib/graphics/graphics.hpp"
@@ -20,6 +21,23 @@
 
 using namespace PopLib;
 
+void crash()
+{
+#ifdef _WIN32
+	__try {
+        int a = 0;
+        int b = 5 / a;
+        (void)b;
+    }
+    __except(PopLib::SEHCatcher::UnhandledExceptionFilter(GetExceptionInformation())) {
+    }
+#else
+    int a = 0;
+    int b = 5 / a;
+    (void)b; // this executes the catcher automatically
+#endif
+}
+
 Board::Board(V14DemoApp* theApp)
 {
 	mApp = theApp;
@@ -28,16 +46,18 @@ Board::Board(V14DemoApp* theApp)
 
 	SysFont* aFont = new SysFont(mApp, LiberationSans_Regular, LiberationSans_Regular_Size, 12, 0, false, false, false);
 
+	// @ThePixelMoon: moved because why not
 	mDemoButton = new ButtonWidget(0, this);
 	mDemoButton->mLabel = "Demo Widget";
-	mDemoButton->SetFont(aFont);
-	mDemoButton->Resize(10, 10, 10 + aFont->StringWidth(mDemoButton->mLabel), 50);
+	mDemoButton->SetFont(FONT_DEFAULT);
+	int w = FONT_DEFAULT->StringWidth(mDemoButton->mLabel);
+	mDemoButton->Resize(mApp->mWidth - 20 - w, 70, w + 10, 50);
 	AddWidget(mDemoButton);
 
 	mDialogButton = new ButtonWidget(1, this);
 	mDialogButton->mLabel = "Do Dialog";
 	mDialogButton->SetFont(FONT_DEFAULT);
-	int w = FONT_DEFAULT->StringWidth(mDialogButton->mLabel);
+	w = FONT_DEFAULT->StringWidth(mDialogButton->mLabel);
 	mDialogButton->Resize(mApp->mWidth - 20 - w, 10, w + 10, 50);
 	AddWidget(mDialogButton);
 
@@ -47,6 +67,13 @@ Board::Board(V14DemoApp* theApp)
 	w = FONT_DEFAULT->StringWidth(mMsgButton->mLabel);
 	mMsgButton->Resize(mDemoButton->mX + 20 + mDemoButton->mWidth, 10, w + 10, 50);
 	AddWidget(mMsgButton);
+
+	mCrashButton = new ButtonWidget(3, this);
+	mCrashButton->mLabel = "Crash the game";
+	mCrashButton->SetFont(FONT_DEFAULT);
+	w = FONT_DEFAULT->StringWidth(mCrashButton->mLabel);
+	mCrashButton->Resize(mMsgButton->mX + 20 + mMsgButton->mWidth, 10, w + 10, 50);
+	AddWidget(mCrashButton);
 
 	mDemoWidget = NULL;
 
@@ -69,6 +96,7 @@ Board::~Board()
 	delete mDemoButton;
 	delete mDialogButton;
 	delete mMsgButton;
+	delete mCrashButton;
 
 	if (mDemoWidget != NULL)
 		mApp->mWidgetManager->RemoveWidget(mDemoWidget);
@@ -156,11 +184,11 @@ void Board::Draw(Graphics* g)
 	if (!mLostFocus)
 	{
 		GraphicsAutoState auto_state(g);
-		g->DrawImage(IMAGE_HUNGARR_LOGO, 10, 100);
+		//g->DrawImage(IMAGE_HUNGARR_LOGO, 10, 100);
 		g->SetDrawMode(Graphics::DRAWMODE_ADDITIVE);
 		g->SetColorizeImages(true);
 		g->SetColor(Color(mUpdateCnt % 128, mUpdateCnt % 255, mUpdateCnt % 64));
-		g->DrawImage(IMAGE_HUNGARR_LOGO, 10, 100);
+
 	}
 
 	if (mCurtainMode != CURTAIN_INACTIVE)
@@ -173,6 +201,10 @@ void Board::Draw(Graphics* g)
 	if (mLostFocus)
 		DeferOverlay(mDeferPriority);
 
+	Transform t;
+	//t.Scale(-1.0f, 1.0f);
+	t.RotateDeg((float)(mUpdateCnt % 360));
+	g->DrawImageTransform(IMAGE_HUNGARR_LOGO, t, 200, 200);
 }
 
 void Board::DrawOverlay(Graphics* g)
@@ -197,7 +229,7 @@ void Board::KeyChar(PopChar theChar)
 
 void Board::KeyDown(KeyCode theKey)
 {
-	SDL_Log(GetKeyNameFromCode(theKey).c_str());
+
 }
 
 
@@ -224,5 +256,9 @@ void Board::ButtonDepress(int id)
 	{
 		mApp->MsgBox("This is a SDL3 Message Box", "Test", MsgBoxFlags::MsgBox_ABORTRETRYIGNORE);
 
+	}
+	else if (id == mCrashButton->mId)
+	{
+		crash();
 	}
 }

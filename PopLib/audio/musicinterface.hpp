@@ -1,13 +1,18 @@
 #ifndef __MUSICINTERFACE_HPP__
 #define __MUSICINTERFACE_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "common.hpp"
 
 namespace PopLib
 {
+
+struct StreamData
+{
+    unsigned char *mStreamData = nullptr;
+    void *mStreamHandle = nullptr;
+};
 
 /**
  * @brief music interface

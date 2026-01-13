@@ -1,8 +1,7 @@
 #ifndef __DEMO_WIDGET_HPP__
 #define __DEMO_WIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "PopLib/widget/widget.hpp"
 #include "PopLib/widget/buttonlistener.hpp"

@@ -4,11 +4,21 @@ General
 =======
 * Added the V14 demo, showcases: new blend modes (usage of SDL3), TTF text.
 * Added x64 support.
-* Fixed WideString.
+* Removed WideString
+* Added macOS (partial) + Linux support.
+* Added optional Discord RPC support
+* Added Chipmunk physics
+* Added Dear ImGui support for debug UI's
+* Replaced the normal .pak archives with .gpak (NEW!!!!!!!!!)
+
+Scripting
+=========
+* Added Lua scripting support
 
 AppBase
 ===========
 * Replaced the Windows API input parsing with SDL3 events.
+* The demo projects now use PopApp instead of AppBase (you can still use AppBase, but it's gonna miss out on new additions PopApp has)
 
 Graphics
 ================================
@@ -20,8 +30,7 @@ Audio
 
 BASS related:
 =============
-* Upgraded BASS to 2.4
-* Gave access to all functions in the library.
+* Replaced BASS with libopenmpt
 
 ImageLib
 =============

@@ -1,8 +1,7 @@
 #ifndef __EDITWIDGET_HPP__
 #define __EDITWIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "widget.hpp"
 

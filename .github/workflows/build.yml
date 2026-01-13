@@ -30,7 +30,7 @@ jobs:
 
       - name: Read VERSION
         id: extract
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat VERSION.pz)" >> $GITHUB_OUTPUT
 
   build:
     needs: version
@@ -42,13 +42,44 @@ jobs:
           - os: windows-2025
             arch: x64
             cmake_arch: x64
+            build_type: Release
+            generator: "Visual Studio 17 2022"
+          - os: windows-2025
+            arch: x64
+            cmake_arch: x64
+            build_type: Debug
+            generator: "Visual Studio 17 2022"
           - os: windows-2025
             arch: x86
             cmake_arch: Win32
+            build_type: Release
+            generator: "Visual Studio 17 2022"
+          - os: windows-2025
+            arch: x86
+            cmake_arch: Win32
+            build_type: Debug
+            generator: "Visual Studio 17 2022"
           - os: ubuntu-latest
             arch: x64
             cmake_arch: native
-    name: Build ${{ matrix.arch }} on ${{ matrix.os }}
+            build_type: Release
+            generator: "Ninja"
+          - os: ubuntu-latest
+            arch: x64
+            cmake_arch: native
+            build_type: Debug
+            generator: "Ninja"
+          - os: macos-latest
+            arch: arm64
+            cmake_arch: native
+            build_type: Release
+            generator: "Ninja"
+          - os: macos-latest
+            arch: arm64
+            cmake_arch: native
+            build_type: Debug
+            generator: "Ninja"
+    name: Build ${{ matrix.build_type }} ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -60,6 +91,17 @@ jobs:
         with:
           cmakeVersion: latest
 
+      - name: Install Ninja (non-Windows)
+        if: matrix.generator == 'Ninja'
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y ninja-build
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install ninja
+          fi
+        shell: bash
+
       - name: Install dependencies (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -67,43 +109,59 @@ jobs:
           sudo apt-get install -y \
             build-essential libx11-dev libxcursor-dev libxi-dev \
             libxrandr-dev libxext-dev libdrm-dev libgbm-dev \
-            libwayland-dev libegl1-mesa-dev libfreetype6-dev libharfbuzz-dev
+            libwayland-dev libegl1-mesa-dev libfreetype6-dev libharfbuzz-dev \
+            libopenmpt-dev
+        shell: bash
+
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install freetype harfbuzz openal-soft libopenmpt
+        shell: bash
 
       - name: Configure
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -S . -B build_${{ matrix.arch }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.cmake_arch }}
-          else
-            cmake -S . -B build_${{ matrix.arch }} -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-          fi
+          cmake -S . -B build_${{ matrix.arch }}_${{ matrix.build_type }} \
+            -G "${{ matrix.generator }}" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            ${{ matrix.os == 'windows-2025' && format('-A {0}', matrix.cmake_arch) || '' }} \
+            -DCMAKE_INSTALL_PREFIX=$PWD/dist/install
         shell: bash
 
       - name: Build
-        run: cmake --build build_${{ matrix.arch }} --config Release
+        run: cmake --build build_${{ matrix.arch }}_${{ matrix.build_type }} --config ${{ matrix.build_type }}
+        shell: bash
 
       - name: Install
-        run: cmake --install build_${{ matrix.arch }} --config Release
+        run: cmake --install build_${{ matrix.arch }}_${{ matrix.build_type }} --config ${{ matrix.build_type }}
+        shell: bash
 
       - name: Organize output
-        shell: bash
         run: |
           mkdir -p dist/examples dist/tools
-          cp VERSION dist/
+          cp VERSION.pz dist/
 
           if [[ -d examples/bin ]]; then
-           cp -r examples/bin/. dist/examples/
+            cp -r examples/bin/. dist/examples/
           else
-           echo "warning: examples/bin does not exist."
+            echo "warning: examples/bin does not exist."
           fi
 
           if [[ "$RUNNER_OS" == "Windows" && -d tools ]]; then
             cp -r tools/*.exe dist/tools/ || echo "tools not found"
+          elif [[ "$RUNNER_OS" == "macOS" && -d tools ]]; then
+            cp -r tools/* dist/tools/ || echo "tools not found"
           fi
+        shell: bash
+
+      - name: Remove install folder
+        run: rm -rf dist/install
+        shell: bash
 
       - name: Upload dist directory
         uses: actions/upload-artifact@v4
         with:
-          name: PopLib-${{ needs.version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
+          name: PopLib-${{ needs.version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}
           path: dist/
 
   release:

@@ -1,8 +1,7 @@
 #ifndef __HYPERLINKWIDGET_HPP__
 #define __HYPERLINKWIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "buttonwidget.hpp"
 

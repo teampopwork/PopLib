@@ -1,8 +1,7 @@
 #ifndef __MATRIX_HPP__
 #define __MATRIX_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "vector.hpp"
 

@@ -4,9 +4,8 @@
 
 #ifndef __SCROLLBARWIDGET_HPP__
 #define __SCROLLBARWIDGET_HPP__
-#ifdef _WIN32
+
 #pragma once
-#endif
 
 #include "widget.hpp"
 #include "buttonlistener.hpp"
