@@ -33,7 +33,7 @@ Color::Color() : mRed(0), mGreen(0), mBlue(0), mAlpha(255)
 
 Color::Color(int theColor)
 	: mAlpha((theColor >> 24) & 0xFF), mRed((theColor >> 16) & 0xFF), mGreen((theColor >> 8) & 0xFF),
-	Blue((theColor) & 0xFF)
+	mBlue((theColor) & 0xFF)
 {
 	if (mBlue == 0)
 		mBlue = 0xff;
