@@ -248,7 +248,7 @@ bool EditWidget::IsPartOfWord(PopChar theChar)
 {
 	return (((theChar >= 'A') && (theChar <= 'Z')) || ((theChar >= 'a') && (theChar <= 'z')) ||
 			((theChar >= '0') && (theChar <= '9')) ||
-			(((unsigned int)theChar >= (unsigned int)('�')) && ((unsigned int)theChar <= (unsigned int)('�'))) ||
+			(((unsigned int)theChar >= (unsigned int)(L'À')) && ((unsigned int)theChar <= (unsigned int)(L'ÿ'))) || //thanks Kyle Sylvestre for pointing this out!
 			(theChar == '_'));
 }
 
