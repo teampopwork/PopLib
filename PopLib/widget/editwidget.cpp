@@ -248,8 +248,9 @@ bool EditWidget::IsPartOfWord(PopChar theChar)
 {
 	return (((theChar >= 'A') && (theChar <= 'Z')) || ((theChar >= 'a') && (theChar <= 'z')) ||
 			((theChar >= '0') && (theChar <= '9')) ||
-			//(((unsigned int)theChar >= (unsigned int)('�')) && ((unsigned int)theChar <= (unsigned int)('�'))) ||
-			(theChar == '_'));
+			(((unsigned int)theChar >= (unsigned int)(L'À')) && ((unsigned int)theChar <= (unsigned int)(L'ÿ'))) ||
+			(theChar == '_'));//fix unicode character offset pointed out by Kyle Sylvestre.  
+		
 }
 
 void EditWidget::ProcessKey(KeyCode theKey, PopChar theChar)
