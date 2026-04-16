@@ -22,7 +22,9 @@ Modifications and additions by Team PopWork.
 GNU Affero General Public License, version 3.
 
 ## Project insights
-[![Build Status](https://github.com/teampopwork/PopLib/actions/workflows/build.yml/badge.svg)](https://github.com/teampopwork/PopLib/actions/workflows/build.yml) The build status is currently passing at 92%.  For Ubuntu related builds, you may not be so lucky with configuring and building because SDL_XSCRNSAVER is being deprecated in favor of wayland, as mentioned in issue #7.  We will be working on a solution to add SDL_VIDEODRIVER=wayland to ensure proper building on ubuntu. ![Repo size](https://img.shields.io/github/repo-size/teampopwork/poplib) ![Last commit](https://img.shields.io/github/last-commit/teampopwork/poplib)
+[![Build Status](https://github.com/teampopwork/PopLib/actions/workflows/build.yml/badge.svg)](https://github.com/teampopwork/PopLib/actions/workflows/build.yml) ![Repo size](https://img.shields.io/github/repo-size/teampopwork/poplib) ![Last commit](https://img.shields.io/github/last-commit/teampopwork/poplib)
+
+The build status is currently passing at 92%. However, for Ubuntu builds, you may not be so lucky with configuring and building because Xorg is being deprecated in favor of Wayland, as mentioned in issue #7, and might not provide required dependencies when building SDL for the project.
 
 ## Building
 > see docs/getting_started.md
